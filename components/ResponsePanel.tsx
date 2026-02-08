@@ -14,7 +14,7 @@ export const ResponsePanel: React.FC<ResponsePanelProps> = ({ response, loading 
 
   if (loading) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center text-gray-400 p-8">
+      <div className="flex-1 flex flex-col items-center justify-center text-gray-400 p-8 min-h-[200px]">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
         <p>Sending Request...</p>
       </div>
@@ -23,7 +23,7 @@ export const ResponsePanel: React.FC<ResponsePanelProps> = ({ response, loading 
 
   if (!response) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center text-gray-300 p-8">
+      <div className="flex-1 flex flex-col items-center justify-center text-gray-300 p-8 min-h-[200px]">
         <div className="text-6xl mb-4">⚡</div>
         <p>Send a request to see the response here.</p>
       </div>
@@ -75,7 +75,7 @@ export const ResponsePanel: React.FC<ResponsePanelProps> = ({ response, loading 
   };
 
   return (
-    <div className="flex flex-col h-full bg-white border-t border-gray-200 mt-4 shadow-sm rounded-lg overflow-hidden">
+    <div className="flex flex-col bg-white border-t border-gray-200 mt-4 shadow-sm rounded-lg overflow-hidden">
       {/* Header Info */}
       <div className="px-4 py-3 bg-gray-50 border-b border-gray-200 flex items-center gap-4">
         <h3 className="text-lg font-bold text-gray-800">Response</h3>
@@ -112,8 +112,7 @@ export const ResponsePanel: React.FC<ResponsePanelProps> = ({ response, loading 
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-auto p-0 bg-slate-900 text-gray-100 font-mono text-sm relative">
-        <div className="absolute top-0 left-0 min-w-full min-h-full p-4">
+      <div className="p-4 bg-slate-900 text-gray-100 font-mono text-sm overflow-x-auto">
             {activeTab === 'json' && (
                 <pre className="whitespace-pre-wrap break-all">
                     {renderJson(response.data)}
@@ -134,7 +133,6 @@ export const ResponsePanel: React.FC<ResponsePanelProps> = ({ response, loading 
                     ))}
                 </div>
             )}
-        </div>
       </div>
     </div>
   );

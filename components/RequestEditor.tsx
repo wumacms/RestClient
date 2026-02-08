@@ -36,7 +36,7 @@ export const RequestEditor: React.FC<RequestEditorProps> = ({ request, onChange,
   const methods: HttpMethod[] = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS'];
 
   return (
-    <div className="flex flex-col h-full bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+    <div className="flex flex-col bg-white rounded-lg shadow-sm border border-gray-200">
       
       {/* Top Bar: Method & URL */}
       <div className="p-4 border-b border-gray-200 bg-gray-50 flex gap-2 items-center">
@@ -88,7 +88,7 @@ export const RequestEditor: React.FC<RequestEditorProps> = ({ request, onChange,
       </div>
 
       {/* Editor Content */}
-      <div className="flex-1 overflow-y-auto p-4 bg-white">
+      <div className="p-4 bg-white">
         
         {activeTab === 'headers' && (
           <div className="space-y-2">
@@ -142,7 +142,7 @@ export const RequestEditor: React.FC<RequestEditorProps> = ({ request, onChange,
         )}
 
         {activeTab === 'body' && (
-          <div className="h-full flex flex-col">
+          <div className="flex flex-col">
              <div className="flex items-center gap-4 mb-4">
                 <label className="text-sm font-semibold text-gray-700">Content Type:</label>
                 <div className="flex bg-gray-100 p-1 rounded">
@@ -166,11 +166,12 @@ export const RequestEditor: React.FC<RequestEditorProps> = ({ request, onChange,
                  value={request.bodyContent}
                  onChange={(e) => updateRequest({ bodyContent: e.target.value })}
                  placeholder={request.bodyType === 'json' ? "{\n  \"key\": \"value\"\n}" : "Text content..."}
-                 className="flex-1 w-full border border-gray-300 rounded-md p-4 font-mono text-sm text-gray-800 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 focus:outline-none resize-none bg-gray-50"
+                 rows={12}
+                 className="w-full border border-gray-300 rounded-md p-4 font-mono text-sm text-gray-800 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 focus:outline-none bg-gray-50"
                  spellCheck={false}
                />
              ) : (
-                 <div className="flex-1 flex items-center justify-center text-gray-400 text-sm border-2 border-dashed border-gray-100 rounded-lg">
+                 <div className="py-8 flex items-center justify-center text-gray-400 text-sm border-2 border-dashed border-gray-100 rounded-lg">
                     This request has no body
                  </div>
              )}

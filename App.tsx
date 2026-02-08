@@ -263,49 +263,49 @@ const App: React.FC = () => {
         onImport={handleImport}
       />
       
-      <main className="flex-1 flex flex-col min-w-0 h-full p-4 gap-4">
-        {/* Top Navbar / Shortcuts hint could go here */}
-        
-        <div className="flex items-center justify-between mb-2">
-           <h2 className="text-xl font-semibold text-gray-800">
-               {activeRequest ? (activeRequest.name || 'Untitled Request') : 'Dashboard'}
-           </h2>
-           {!activeRequest && (
-               <button 
-                onClick={handleCreateRequest}
-                className="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700 transition"
-               >
-                   Create New Request
-               </button>
-           )}
-        </div>
-
-        {activeRequest ? (
-           <div className="flex flex-col h-full gap-4 overflow-hidden">
-             <div className="flex-none h-1/3 min-h-[300px]">
-                <RequestEditor 
-                    request={activeRequest}
-                    onChange={handleUpdateRequest}
-                    onSend={handleSendRequest}
-                />
-             </div>
-             <div className="flex-1 min-h-0 overflow-hidden">
-                <ResponsePanel response={response} loading={loading} />
-             </div>
-           </div>
-        ) : (
-            <div className="flex flex-col items-center justify-center h-full text-gray-400">
-                <div className="text-6xl mb-4">🚀</div>
-                <h3 className="text-xl font-semibold text-gray-600">Welcome to RC Rest Client</h3>
-                <p className="mt-2 text-center max-w-md">Select a request from the sidebar or create a new one to get started. You can organize requests into folders by dragging and dropping.</p>
+      <main className="flex-1 flex flex-col min-w-0 h-full overflow-y-auto bg-gray-100">
+        <div className="p-4 flex flex-col gap-4">
+            <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold text-gray-800">
+                {activeRequest ? (activeRequest.name || 'Untitled Request') : 'Dashboard'}
+            </h2>
+            {!activeRequest && (
                 <button 
-                 onClick={handleCreateRequest}
-                 className="mt-6 bg-white border border-gray-300 text-gray-700 px-6 py-2 rounded hover:bg-gray-50 transition"
+                    onClick={handleCreateRequest}
+                    className="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700 transition"
                 >
-                    Create Request
+                    Create New Request
                 </button>
+            )}
             </div>
-        )}
+
+            {activeRequest ? (
+            <div className="flex flex-col gap-4">
+                <div className="flex-none">
+                    <RequestEditor 
+                        request={activeRequest}
+                        onChange={handleUpdateRequest}
+                        onSend={handleSendRequest}
+                    />
+                </div>
+                <div className="flex-none">
+                    <ResponsePanel response={response} loading={loading} />
+                </div>
+            </div>
+            ) : (
+                <div className="flex flex-col items-center justify-center py-20 text-gray-400">
+                    <div className="text-6xl mb-4">🚀</div>
+                    <h3 className="text-xl font-semibold text-gray-600">Welcome to RC Rest Client</h3>
+                    <p className="mt-2 text-center max-w-md">Select a request from the sidebar or create a new one to get started. You can organize requests into folders by dragging and dropping.</p>
+                    <button 
+                    onClick={handleCreateRequest}
+                    className="mt-6 bg-white border border-gray-300 text-gray-700 px-6 py-2 rounded hover:bg-gray-50 transition"
+                    >
+                        Create Request
+                    </button>
+                </div>
+            )}
+        </div>
       </main>
     </div>
   );
