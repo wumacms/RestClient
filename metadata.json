@@ -1,0 +1,5 @@
+{
+  "name": "RC Rest Client",
+  "description": "A robust, browser-based REST API client with folder organization, local storage persistence, and drag-and-drop management.",
+  "requestFramePermissions": []
+}
