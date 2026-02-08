@@ -30,7 +30,8 @@ export interface ApiResponse {
   status: number;
   statusText: string;
   headers: Record<string, string>;
-  data: any;
+  data: any; // Can be object, string, or Blob
+  contentType: string;
   size: string;
   time: number; // in ms
   isError: boolean;

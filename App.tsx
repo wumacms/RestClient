@@ -5,7 +5,7 @@ import { ResponsePanel } from './components/ResponsePanel';
 import { AppState, Folder, RequestItem, ApiResponse } from './types';
 import { generateId, formatBytes } from './utils/helpers';
 import { translations, Language } from './utils/translations';
-import { Menu, Sun, Moon, Languages } from 'lucide-react';
+import { Menu, Sun, Moon } from 'lucide-react';
 
 const DEFAULT_STATE: AppState = {
   folders: [
@@ -264,25 +264,42 @@ const App: React.FC = () => {
         const res = await fetch(req.url, options);
         const endTime = performance.now();
         
-        const contentType = res.headers.get('content-type');
+        const contentTypeHeader = res.headers.get('content-type');
+        const contentType = contentTypeHeader ? contentTypeHeader.toLowerCase() : '';
+        
         let data;
-        if (contentType && contentType.includes('application/json')) {
-            data = await res.json();
+        let sizeBytes = 0;
+
+        // Detect binary types to handle as Blob
+        const isBinary = /image|video|audio|pdf|zip|octet-stream/.test(contentType);
+        
+        if (isBinary) {
+            data = await res.blob();
+            sizeBytes = data.size;
+        } else if (contentType.includes('application/json')) {
+            try {
+                data = await res.json();
+                sizeBytes = new Blob([JSON.stringify(data)]).size;
+            } catch {
+                // Fallback if JSON parse fails
+                data = await res.text();
+                sizeBytes = new Blob([data]).size;
+            }
         } else {
+            // Text, HTML, XML, Markdown, etc.
             data = await res.text();
+            sizeBytes = new Blob([data]).size;
         }
 
         const resHeaders: Record<string, string> = {};
         res.headers.forEach((v, k) => resHeaders[k] = v);
-
-        // Calculate approx size
-        const sizeBytes = new Blob([typeof data === 'string' ? data : JSON.stringify(data)]).size;
 
         setResponse({
             status: res.status,
             statusText: res.statusText,
             headers: resHeaders,
             data: data,
+            contentType: contentTypeHeader || 'unknown',
             size: formatBytes(sizeBytes),
             time: Math.round(endTime - startTime),
             isError: !res.ok
@@ -294,6 +311,7 @@ const App: React.FC = () => {
             statusText: t.networkError,
             headers: {},
             data: error.message || t.corsError,
+            contentType: 'text/plain',
             size: '0 B',
             time: Math.round(performance.now() - startTime),
             isError: true

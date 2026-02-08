@@ -49,7 +49,9 @@ export const translations = {
     untitledRequest: "Untitled Request",
     networkError: "Network Error",
     corsError: "Failed to fetch. This might be a CORS issue.",
-    enterUrl: "Please enter a URL"
+    enterUrl: "Please enter a URL",
+    preview: "Preview",
+    download: "Download"
   },
   zh: {
     appName: "REST 客户端",
@@ -99,6 +101,8 @@ export const translations = {
     untitledRequest: "无标题请求",
     networkError: "网络错误",
     corsError: "获取失败。这可能是 CORS 问题。",
-    enterUrl: "请输入 URL"
+    enterUrl: "请输入 URL",
+    preview: "预览",
+    download: "下载"
   }
 };

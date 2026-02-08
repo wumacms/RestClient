@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { ApiResponse } from '../types';
 import { cn } from '../utils/helpers';
-import { Copy, Check } from 'lucide-react';
+import { Copy, Check, Download, Eye, FileText, FileCode, Music, Video, Image as ImageIcon } from 'lucide-react';
 import { translations } from '../utils/translations';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface ResponsePanelProps {
   response: ApiResponse | null;
@@ -11,8 +13,39 @@ interface ResponsePanelProps {
 }
 
 export const ResponsePanel: React.FC<ResponsePanelProps> = ({ response, loading, t }) => {
-  const [activeTab, setActiveTab] = React.useState<'json' | 'headers' | 'raw'>('json');
+  const [activeTab, setActiveTab] = React.useState<'preview' | 'json' | 'headers' | 'raw'>('json');
   const [copied, setCopied] = React.useState(false);
+  const [blobUrl, setBlobUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Revoke previous URL if exists
+    if (blobUrl) {
+      URL.revokeObjectURL(blobUrl);
+    }
+    
+    if (response?.data instanceof Blob) {
+      const url = URL.createObjectURL(response.data);
+      setBlobUrl(url);
+      setActiveTab('preview');
+    } else {
+      setBlobUrl(null);
+      if (response) {
+          // Default tab logic
+          const type = response.contentType || '';
+          if (type.includes('markdown') || type.includes('html')) {
+              setActiveTab('preview');
+          } else if (type.includes('json')) {
+              setActiveTab('json');
+          } else {
+              setActiveTab('raw');
+          }
+      }
+    }
+    
+    return () => {
+        if (blobUrl) URL.revokeObjectURL(blobUrl);
+    };
+  }, [response]);
 
   if (loading) {
     return (
@@ -33,6 +66,15 @@ export const ResponsePanel: React.FC<ResponsePanelProps> = ({ response, loading,
   }
 
   const isSuccess = response.status >= 200 && response.status < 300;
+  const contentType = response.contentType?.toLowerCase() || '';
+
+  const isJson = contentType.includes('application/json');
+  const isImage = contentType.startsWith('image/');
+  const isAudio = contentType.startsWith('audio/');
+  const isVideo = contentType.startsWith('video/');
+  const isBlob = response.data instanceof Blob;
+  // Naive markdown detection
+  const isMarkdown = contentType.includes('markdown') || (typeof response.data === 'string' && (response.data.includes('# ') || response.data.includes('**')));
 
   const handleCopy = () => {
     let content = "";
@@ -41,31 +83,66 @@ export const ResponsePanel: React.FC<ResponsePanelProps> = ({ response, loading,
     } else if (activeTab === 'headers') {
       content = JSON.stringify(response.headers, null, 2);
     } else {
-      content = typeof response.data === 'string' ? response.data : JSON.stringify(response.data);
+       if (typeof response.data === 'string') {
+           content = response.data;
+       } else {
+           content = "[Binary Data]";
+       }
     }
     navigator.clipboard.writeText(content);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
+  
+  const handleDownload = () => {
+      let url = blobUrl;
+      let cleanup = false;
+      
+      if (!url) {
+          // Create blob from text/json data
+          const dataStr = typeof response.data === 'object' ? JSON.stringify(response.data, null, 2) : response.data;
+          const blob = new Blob([dataStr], { type: contentType || 'text/plain' });
+          url = URL.createObjectURL(blob);
+          cleanup = true;
+      }
+      
+      const a = document.createElement('a');
+      a.href = url!;
+      
+      // Guess extension
+      let ext = 'txt';
+      if (contentType.includes('json')) ext = 'json';
+      else if (contentType.includes('html')) ext = 'html';
+      else if (contentType.includes('markdown')) ext = 'md';
+      else if (contentType.includes('png')) ext = 'png';
+      else if (contentType.includes('jpeg')) ext = 'jpg';
+      else if (contentType.includes('pdf')) ext = 'pdf';
+      
+      a.download = `response-${Date.now()}.${ext}`;
+      a.click();
+      
+      if (cleanup) {
+          URL.revokeObjectURL(url!);
+      }
+  };
 
-  // Basic syntax highlighting for JSON with Dark Mode support
+  // Basic syntax highlighting for JSON
   const renderJson = (data: any) => {
     try {
         const json = JSON.stringify(data, null, 2);
-        // Syntax coloring compatible with dark mode via Tailwind classes
         const html = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
             .replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
-                let cls = 'text-purple-600 dark:text-purple-400'; // number
+                let cls = 'text-purple-600 dark:text-purple-400'; 
                 if (/^"/.test(match)) {
                     if (/:$/.test(match)) {
-                        cls = 'text-blue-600 dark:text-blue-400 font-semibold'; // key
+                        cls = 'text-blue-600 dark:text-blue-400 font-semibold';
                     } else {
-                        cls = 'text-green-600 dark:text-green-400'; // string
+                        cls = 'text-green-600 dark:text-green-400';
                     }
                 } else if (/true|false/.test(match)) {
-                    cls = 'text-orange-600 dark:text-orange-400'; // boolean
+                    cls = 'text-orange-600 dark:text-orange-400';
                 } else if (/null/.test(match)) {
-                    cls = 'text-gray-500 dark:text-gray-400'; // null
+                    cls = 'text-gray-500 dark:text-gray-400';
                 }
                 return '<span class="' + cls + '">' + match + '</span>';
             });
@@ -94,45 +171,153 @@ export const ResponsePanel: React.FC<ResponsePanelProps> = ({ response, loading,
 
       {/* Tabs */}
       <div className="flex items-center justify-between px-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-paper">
-        <div className="flex">
-            {(['json', 'raw', 'headers'] as const).map(tab => (
+        <div className="flex overflow-x-auto">
             <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
+                onClick={() => setActiveTab('preview')}
                 className={cn(
-                "px-4 py-2 text-sm font-medium border-b-2 transition-colors",
-                activeTab === tab 
+                "px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-2",
+                activeTab === 'preview'
                     ? "border-blue-500 text-blue-600 dark:text-blue-400" 
                     : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
                 )}
             >
-                {tab.toUpperCase()}
+                <Eye size={14} /> {t.preview}
             </button>
-            ))}
+
+            {!isBlob && (
+                <>
+                <button
+                    onClick={() => setActiveTab('json')}
+                    className={cn(
+                    "px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-2",
+                    activeTab === 'json'
+                        ? "border-blue-500 text-blue-600 dark:text-blue-400" 
+                        : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                    )}
+                >
+                    <FileCode size={14} /> JSON
+                </button>
+                <button
+                    onClick={() => setActiveTab('raw')}
+                    className={cn(
+                    "px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-2",
+                    activeTab === 'raw'
+                        ? "border-blue-500 text-blue-600 dark:text-blue-400" 
+                        : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                    )}
+                >
+                   <FileText size={14} /> RAW
+                </button>
+                </>
+            )}
+
+            <button
+                onClick={() => setActiveTab('headers')}
+                className={cn(
+                "px-4 py-2 text-sm font-medium border-b-2 transition-colors",
+                activeTab === 'headers'
+                    ? "border-blue-500 text-blue-600 dark:text-blue-400" 
+                    : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                )}
+            >
+                {t.headers.toUpperCase()}
+            </button>
         </div>
-        <button onClick={handleCopy} className="p-2 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
-            {copied ? <Check size={16} className="text-green-500"/> : <Copy size={16} />}
-        </button>
+        <div className="flex items-center gap-1">
+            <button onClick={handleDownload} className="p-2 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200" title={t.download}>
+                <Download size={16} />
+            </button>
+            {!isBlob && (
+                <button onClick={handleCopy} className="p-2 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
+                    {copied ? <Check size={16} className="text-green-500"/> : <Copy size={16} />}
+                </button>
+            )}
+        </div>
       </div>
 
       {/* Content */}
-      <div className="p-4 bg-slate-900 text-gray-100 font-mono text-sm overflow-x-auto min-h-[150px]">
+      <div className="p-4 bg-slate-50 dark:bg-slate-900 text-gray-800 dark:text-gray-100 font-mono text-sm overflow-x-auto min-h-[150px]">
+            
+            {/* Preview Tab */}
+            {activeTab === 'preview' && (
+                <div className="w-full h-full flex items-start justify-center">
+                    {isImage && blobUrl && (
+                        <div className="flex flex-col items-center">
+                            <img src={blobUrl} alt="Response content" className="max-w-full max-h-[500px] object-contain rounded border border-gray-200 dark:border-gray-700" />
+                            <div className="mt-2 text-xs text-gray-500 flex items-center gap-1"><ImageIcon size={12}/> Image Preview</div>
+                        </div>
+                    )}
+
+                    {isAudio && blobUrl && (
+                        <div className="flex flex-col items-center w-full max-w-md py-8">
+                            <audio controls src={blobUrl} className="w-full" />
+                            <div className="mt-4 text-xs text-gray-500 flex items-center gap-1"><Music size={12}/> Audio Player</div>
+                        </div>
+                    )}
+
+                    {isVideo && blobUrl && (
+                        <div className="flex flex-col items-center w-full">
+                            <video controls src={blobUrl} className="max-w-full max-h-[500px] rounded bg-black" />
+                            <div className="mt-2 text-xs text-gray-500 flex items-center gap-1"><Video size={12}/> Video Player</div>
+                        </div>
+                    )}
+
+                    {!isBlob && isMarkdown && typeof response.data === 'string' && (
+                        <div className="w-full bg-white dark:bg-dark p-4 rounded border border-gray-200 dark:border-gray-700">
+                            <article className="markdown-body">
+                                <ReactMarkdown remarkPlugins={[remarkGfm]}>{response.data}</ReactMarkdown>
+                            </article>
+                        </div>
+                    )}
+
+                    {!isBlob && !isMarkdown && (
+                        <div className="w-full">
+                             {/* Fallback for JSON/Text in preview mode */}
+                             {isJson ? (
+                                <pre className="whitespace-pre-wrap break-all text-xs">
+                                     {renderJson(response.data)}
+                                </pre>
+                             ) : (
+                                <pre className="whitespace-pre-wrap break-all text-gray-600 dark:text-gray-300">
+                                    {String(response.data)}
+                                </pre>
+                             )}
+                        </div>
+                    )}
+
+                    {isBlob && !isImage && !isAudio && !isVideo && (
+                        <div className="flex flex-col items-center justify-center py-10 text-gray-500">
+                             <FileText size={48} className="mb-2 opacity-50"/>
+                             <p>Binary file ({response.size})</p>
+                             <button onClick={handleDownload} className="mt-4 text-blue-600 hover:underline flex items-center gap-2">
+                                <Download size={16}/> {t.download}
+                             </button>
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* JSON Tab */}
             {activeTab === 'json' && (
                 <pre className="whitespace-pre-wrap break-all">
                     {renderJson(response.data)}
                 </pre>
             )}
+
+            {/* RAW Tab */}
              {activeTab === 'raw' && (
-                <pre className="whitespace-pre-wrap break-all text-gray-300">
+                <pre className="whitespace-pre-wrap break-all text-gray-600 dark:text-gray-300">
                     {typeof response.data === 'string' ? response.data : JSON.stringify(response.data)}
                 </pre>
             )}
+
+            {/* Headers Tab */}
             {activeTab === 'headers' && (
                 <div className="grid grid-cols-[auto_1fr] gap-x-8 gap-y-2">
                     {Object.entries(response.headers).map(([k, v]) => (
                         <React.Fragment key={k}>
-                            <span className="text-blue-300 font-semibold text-right">{k}:</span>
-                            <span className="text-green-300 break-all">{v}</span>
+                            <span className="text-blue-600 dark:text-blue-300 font-semibold text-right">{k}:</span>
+                            <span className="text-green-600 dark:text-green-300 break-all">{v}</span>
                         </React.Fragment>
                     ))}
                 </div>
