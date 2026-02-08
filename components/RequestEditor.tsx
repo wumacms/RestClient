@@ -1,13 +1,15 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { RequestItem, HeaderItem, HttpMethod } from '../types';
-import { Play, Plus, Trash2, Save } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { RequestItem, HttpMethod } from '../types';
+import { Play, Plus, Trash2 } from 'lucide-react';
 import { cn, getMethodColor } from '../utils/helpers';
 import { generateId } from '../utils/helpers';
+import { translations } from '../utils/translations';
 
 interface RequestEditorProps {
   request: RequestItem;
   onChange: (req: RequestItem) => void;
   onSend: (req: RequestItem) => void;
+  t: typeof translations.en;
 }
 
 // Helper to parse query params from URL
@@ -28,7 +30,7 @@ const parseParams = (url: string) => {
     }
 };
 
-export const RequestEditor: React.FC<RequestEditorProps> = ({ request, onChange, onSend }) => {
+export const RequestEditor: React.FC<RequestEditorProps> = ({ request, onChange, onSend, t }) => {
   const [activeTab, setActiveTab] = useState<'params' | 'headers' | 'body'>('params');
   const [localParams, setLocalParams] = useState<{id: string, key: string, value: string}[]>([]);
 
@@ -89,6 +91,14 @@ export const RequestEditor: React.FC<RequestEditorProps> = ({ request, onChange,
 
   const methods: HttpMethod[] = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS'];
 
+  const getTabLabel = (tab: 'params' | 'headers' | 'body') => {
+      switch (tab) {
+          case 'params': return t.params;
+          case 'headers': return `${t.headers} (${request.headers.length})`;
+          case 'body': return t.body;
+      }
+  };
+
   return (
     <div className="flex flex-col bg-white dark:bg-paper rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
       
@@ -119,7 +129,7 @@ export const RequestEditor: React.FC<RequestEditorProps> = ({ request, onChange,
           onClick={() => onSend(request)}
           className="w-full md:w-auto bg-dark dark:bg-blue-600 hover:bg-black dark:hover:bg-blue-700 text-white px-6 py-2.5 rounded-r-md font-medium text-sm flex items-center justify-center gap-2 transition-colors"
         >
-          <Play size={16} fill="currentColor" /> Send
+          <Play size={16} fill="currentColor" /> {t.send}
         </button>
       </div>
 
@@ -136,7 +146,7 @@ export const RequestEditor: React.FC<RequestEditorProps> = ({ request, onChange,
                 : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:border-gray-200 dark:hover:border-gray-700"
             )}
           >
-            {tab === 'headers' ? `Headers (${request.headers.length})` : tab}
+            {getTabLabel(tab)}
           </button>
         ))}
       </div>
@@ -147,34 +157,34 @@ export const RequestEditor: React.FC<RequestEditorProps> = ({ request, onChange,
         {activeTab === 'headers' && (
           <div className="space-y-2">
             <div className="flex justify-between items-center mb-4">
-              <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Request Headers</h4>
+              <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300">{t.headers}</h4>
               <button 
                 onClick={addHeader}
                 className="text-xs bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 px-3 py-1.5 rounded flex items-center gap-1 transition-colors border border-gray-200 dark:border-gray-700"
               >
-                <Plus size={14} /> Add Header
+                <Plus size={14} /> {t.addHeader}
               </button>
             </div>
             
             <div className="border border-gray-200 dark:border-gray-700 rounded-md divide-y divide-gray-100 dark:divide-gray-700">
                 <div className="grid grid-cols-[1fr_1fr_40px] gap-2 bg-gray-50 dark:bg-gray-800/50 p-2 text-xs font-semibold text-gray-500 dark:text-gray-400">
-                    <div>Key</div>
-                    <div>Value</div>
-                    <div className="text-center">Action</div>
+                    <div>{t.key}</div>
+                    <div>{t.value}</div>
+                    <div className="text-center">{t.action}</div>
                 </div>
                 {request.headers.map(header => (
                 <div key={header.id} className="grid grid-cols-[1fr_1fr_40px] gap-2 p-2 group hover:bg-gray-50 dark:hover:bg-gray-800/30">
                     <input
                     type="text"
                     value={header.key}
-                    placeholder="Key"
+                    placeholder={t.key}
                     onChange={(e) => handleHeaderChange(header.id, 'key', e.target.value)}
                     className="border-b border-transparent focus:border-blue-500 focus:outline-none bg-transparent px-2 py-1 text-sm text-gray-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-600"
                     />
                     <input
                     type="text"
                     value={header.value}
-                    placeholder="Value"
+                    placeholder={t.value}
                     onChange={(e) => handleHeaderChange(header.id, 'value', e.target.value)}
                     className="border-b border-transparent focus:border-blue-500 focus:outline-none bg-transparent px-2 py-1 text-sm text-gray-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-600"
                     />
@@ -189,7 +199,7 @@ export const RequestEditor: React.FC<RequestEditorProps> = ({ request, onChange,
             </div>
             {request.headers.length === 0 && (
                 <div className="text-center py-8 text-gray-400 dark:text-gray-500 text-sm border-2 border-dashed border-gray-100 dark:border-gray-800 rounded-lg">
-                    No headers defined
+                    {t.noHeaders}
                 </div>
             )}
           </div>
@@ -198,20 +208,20 @@ export const RequestEditor: React.FC<RequestEditorProps> = ({ request, onChange,
         {activeTab === 'body' && (
           <div className="flex flex-col">
              <div className="flex items-center gap-4 mb-4 flex-wrap">
-                <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Content Type:</label>
+                <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">{t.contentType}:</label>
                 <div className="flex bg-gray-100 dark:bg-gray-800 p-1 rounded">
-                    {(['none', 'json', 'text'] as const).map(t => (
+                    {(['none', 'json', 'text'] as const).map(type => (
                         <button
-                            key={t}
-                            onClick={() => updateRequest({ bodyType: t })}
+                            key={type}
+                            onClick={() => updateRequest({ bodyType: type })}
                             className={cn(
                                 "px-3 py-1 text-xs font-medium rounded uppercase transition-colors",
-                                request.bodyType === t 
+                                request.bodyType === type 
                                     ? "bg-white dark:bg-gray-700 shadow text-blue-600 dark:text-blue-400" 
                                     : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
                             )}
                         >
-                            {t}
+                            {type}
                         </button>
                     ))}
                 </div>
@@ -228,7 +238,7 @@ export const RequestEditor: React.FC<RequestEditorProps> = ({ request, onChange,
                />
              ) : (
                  <div className="py-8 flex items-center justify-center text-gray-400 dark:text-gray-500 text-sm border-2 border-dashed border-gray-100 dark:border-gray-800 rounded-lg">
-                    This request has no body
+                    {t.noBody}
                  </div>
              )}
           </div>
@@ -237,34 +247,34 @@ export const RequestEditor: React.FC<RequestEditorProps> = ({ request, onChange,
         {activeTab === 'params' && (
            <div className="space-y-2">
             <div className="flex justify-between items-center mb-4">
-              <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Query Parameters</h4>
+              <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300">{t.queryParams}</h4>
               <button 
                 onClick={addParam}
                 className="text-xs bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 px-3 py-1.5 rounded flex items-center gap-1 transition-colors border border-gray-200 dark:border-gray-700"
               >
-                <Plus size={14} /> Add Param
+                <Plus size={14} /> {t.addParam}
               </button>
             </div>
             
             <div className="border border-gray-200 dark:border-gray-700 rounded-md divide-y divide-gray-100 dark:divide-gray-700">
                 <div className="grid grid-cols-[1fr_1fr_40px] gap-2 bg-gray-50 dark:bg-gray-800/50 p-2 text-xs font-semibold text-gray-500 dark:text-gray-400">
-                    <div>Key</div>
-                    <div>Value</div>
-                    <div className="text-center">Action</div>
+                    <div>{t.key}</div>
+                    <div>{t.value}</div>
+                    <div className="text-center">{t.action}</div>
                 </div>
                 {currentParams.map((param, idx) => (
                 <div key={idx} className="grid grid-cols-[1fr_1fr_40px] gap-2 p-2 group hover:bg-gray-50 dark:hover:bg-gray-800/30">
                     <input
                     type="text"
                     value={param.key}
-                    placeholder="Key"
+                    placeholder={t.key}
                     onChange={(e) => handleParamChange(idx, 'key', e.target.value)}
                     className="border-b border-transparent focus:border-blue-500 focus:outline-none bg-transparent px-2 py-1 text-sm text-gray-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-600"
                     />
                     <input
                     type="text"
                     value={param.value}
-                    placeholder="Value"
+                    placeholder={t.value}
                     onChange={(e) => handleParamChange(idx, 'value', e.target.value)}
                     className="border-b border-transparent focus:border-blue-500 focus:outline-none bg-transparent px-2 py-1 text-sm text-gray-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-600"
                     />
@@ -279,7 +289,7 @@ export const RequestEditor: React.FC<RequestEditorProps> = ({ request, onChange,
             </div>
             {currentParams.length === 0 && (
                 <div className="text-center py-8 text-gray-400 dark:text-gray-500 text-sm border-2 border-dashed border-gray-100 dark:border-gray-800 rounded-lg">
-                    No query parameters. Add one or edit the URL.
+                    {t.noParams}
                 </div>
             )}
           </div>

@@ -1,14 +1,16 @@
 import React from 'react';
 import { ApiResponse } from '../types';
-import { cn, getMethodBadgeColor } from '../utils/helpers';
+import { cn } from '../utils/helpers';
 import { Copy, Check } from 'lucide-react';
+import { translations } from '../utils/translations';
 
 interface ResponsePanelProps {
   response: ApiResponse | null;
   loading: boolean;
+  t: typeof translations.en;
 }
 
-export const ResponsePanel: React.FC<ResponsePanelProps> = ({ response, loading }) => {
+export const ResponsePanel: React.FC<ResponsePanelProps> = ({ response, loading, t }) => {
   const [activeTab, setActiveTab] = React.useState<'json' | 'headers' | 'raw'>('json');
   const [copied, setCopied] = React.useState(false);
 
@@ -16,7 +18,7 @@ export const ResponsePanel: React.FC<ResponsePanelProps> = ({ response, loading 
     return (
       <div className="flex-1 flex flex-col items-center justify-center text-gray-400 dark:text-gray-500 p-8 min-h-[200px]">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
-        <p>Sending Request...</p>
+        <p>{t.sending}</p>
       </div>
     );
   }
@@ -25,7 +27,7 @@ export const ResponsePanel: React.FC<ResponsePanelProps> = ({ response, loading 
     return (
       <div className="flex-1 flex flex-col items-center justify-center text-gray-300 dark:text-gray-600 p-8 min-h-[200px]">
         <div className="text-6xl mb-4">⚡</div>
-        <p>Send a request to see the response here.</p>
+        <p>{t.sendPrompt}</p>
       </div>
     );
   }
@@ -78,15 +80,15 @@ export const ResponsePanel: React.FC<ResponsePanelProps> = ({ response, loading 
     <div className="flex flex-col bg-white dark:bg-paper border-t border-gray-200 dark:border-gray-700 mt-4 shadow-sm rounded-lg overflow-hidden">
       {/* Header Info */}
       <div className="px-4 py-3 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-700 flex items-center gap-4 flex-wrap">
-        <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100">Response</h3>
+        <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100">{t.response}</h3>
         
         <div className={cn("px-2 py-0.5 rounded text-sm font-bold text-white", isSuccess ? "bg-green-500" : "bg-red-500")}>
           {response.status} {response.statusText}
         </div>
         
         <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400 font-mono">
-            <span className="bg-gray-200 dark:bg-gray-700 px-2 py-0.5 rounded text-gray-700 dark:text-gray-200">Time: {response.time}ms</span>
-            <span className="bg-gray-200 dark:bg-gray-700 px-2 py-0.5 rounded text-gray-700 dark:text-gray-200">Size: {response.size}</span>
+            <span className="bg-gray-200 dark:bg-gray-700 px-2 py-0.5 rounded text-gray-700 dark:text-gray-200">{t.time}: {response.time}ms</span>
+            <span className="bg-gray-200 dark:bg-gray-700 px-2 py-0.5 rounded text-gray-700 dark:text-gray-200">{t.size}: {response.size}</span>
         </div>
       </div>
 

@@ -5,7 +5,6 @@ import {
   FolderOpen, 
   Plus, 
   Trash2, 
-  FileJson, 
   History, 
   Download, 
   Upload,
@@ -13,11 +12,10 @@ import {
   ChevronDown,
   Edit2,
   FilePlus,
-  X,
-  Sun,
-  Moon
+  X
 } from 'lucide-react';
 import { cn, getMethodColor } from '../utils/helpers';
+import { translations } from '../utils/translations';
 
 interface SidebarProps {
   folders: Folder[];
@@ -36,6 +34,7 @@ interface SidebarProps {
   onMoveRequest: (reqId: string, folderId: string | null) => void;
   onExport: () => void;
   onImport: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  t: typeof translations.en;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -54,7 +53,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onToggleFolder,
   onMoveRequest,
   onExport,
-  onImport
+  onImport,
+  t
 }) => {
   const [draggedRequestId, setDraggedRequestId] = useState<string | null>(null);
 
@@ -99,7 +99,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className="p-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
           <div className="flex items-center gap-2 font-bold text-xl text-gray-800 dark:text-gray-100">
             <div className="bg-blue-600 text-white p-1 rounded">RC</div>
-            REST Client
+            {t.appName}
           </div>
           <button 
             onClick={onClose}
@@ -115,26 +115,26 @@ export const Sidebar: React.FC<SidebarProps> = ({
             onClick={() => { onCreateRequest(); if(window.innerWidth < 768) onClose(); }}
             className="w-full bg-blue-600 hover:bg-blue-700 text-white py-1.5 px-3 rounded text-sm font-medium flex items-center justify-center gap-2 transition-colors shadow-sm"
           >
-            <FilePlus size={16} /> New Post
+            <FilePlus size={16} /> {t.newPost}
           </button>
 
           <div className="flex items-center justify-between">
               <button 
               onClick={onCreateFolder}
               className="p-1.5 text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded transition-colors text-xs font-medium flex items-center gap-1"
-              title="New Folder"
+              title={t.folder}
               >
-              <Plus size={14} /> Folder
+              <Plus size={14} /> {t.folder}
               </button>
               <div className="flex items-center gap-1">
               <button 
                   onClick={onExport}
                   className="p-1.5 text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-                  title="Export Data"
+                  title={t.exportData}
               >
                   <Download size={14} />
               </button>
-              <label className="p-1.5 text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors cursor-pointer" title="Import Data">
+              <label className="p-1.5 text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors cursor-pointer" title={t.importData}>
                   <Upload size={14} />
                   <input type="file" className="hidden" accept=".json" onChange={onImport} />
               </label>
@@ -155,7 +155,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             )}
           >
             <div className="px-2 py-1.5 flex items-center gap-2 text-gray-500 dark:text-gray-400 font-semibold text-sm uppercase tracking-wider mb-1">
-              <History size={14} /> History / Unfiled
+              <History size={14} /> {t.historyUnfiled}
             </div>
             <div className="space-y-0.5">
               {unfiledRequests.map(req => (
@@ -167,10 +167,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   onRename={() => onRenameRequest(req.id)}
                   onDelete={() => onDeleteRequest(req.id)}
                   onDragStart={(e) => handleDragStart(e, req.id)}
+                  t={t}
                 />
               ))}
               {unfiledRequests.length === 0 && (
-                  <div className="text-xs text-gray-400 dark:text-gray-500 italic px-8 py-2">No unfiled requests</div>
+                  <div className="text-xs text-gray-400 dark:text-gray-500 italic px-8 py-2">{t.noUnfiled}</div>
               )}
             </div>
           </div>
@@ -202,14 +203,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       <button 
                           onClick={(e) => { e.stopPropagation(); onRenameFolder(folder.id); }}
                           className="p-1 text-gray-400 dark:text-gray-500 hover:text-blue-500 dark:hover:text-blue-400 transition-colors"
-                          title="Rename"
+                          title={t.rename}
                       >
                           <Edit2 size={12} />
                       </button>
                       <button 
                           onClick={(e) => { e.stopPropagation(); onDeleteFolder(folder.id); }}
                           className="p-1 text-gray-400 dark:text-gray-500 hover:text-red-500 transition-colors"
-                          title="Delete"
+                          title={t.delete}
                       >
                           <Trash2 size={12} />
                       </button>
@@ -227,10 +228,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
                           onRename={() => onRenameRequest(req.id)}
                           onDelete={() => onDeleteRequest(req.id)}
                           onDragStart={(e) => handleDragStart(e, req.id)}
+                          t={t}
                         />
                       ))}
                       {folderRequests.length === 0 && (
-                          <div className="text-xs text-gray-400 dark:text-gray-500 italic px-4 py-1">Empty folder</div>
+                          <div className="text-xs text-gray-400 dark:text-gray-500 italic px-4 py-1">{t.emptyFolder}</div>
                       )}
                     </div>
                   )}
@@ -251,9 +253,10 @@ interface RequestRowProps {
   onRename: () => void;
   onDelete: () => void;
   onDragStart: (e: React.DragEvent) => void;
+  t: typeof translations.en;
 }
 
-const RequestRow: React.FC<RequestRowProps> = ({ req, isActive, onClick, onRename, onDelete, onDragStart }) => {
+const RequestRow: React.FC<RequestRowProps> = ({ req, isActive, onClick, onRename, onDelete, onDragStart, t }) => {
   return (
     <div
       draggable
@@ -272,7 +275,7 @@ const RequestRow: React.FC<RequestRowProps> = ({ req, isActive, onClick, onRenam
           {req.method}
         </span>
         <span className={cn("text-sm truncate", isActive ? "text-blue-900 dark:text-blue-300 font-medium" : "text-gray-600 dark:text-gray-400")}>
-          {req.name || req.url || "New Request"}
+          {req.name || req.url || t.newRequest}
         </span>
       </div>
       <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
@@ -282,7 +285,7 @@ const RequestRow: React.FC<RequestRowProps> = ({ req, isActive, onClick, onRenam
             "p-1 rounded transition-all",
             isActive ? "text-blue-300 dark:text-blue-400 hover:text-blue-600 dark:hover:text-blue-300" : "text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400"
             )}
-            title="Rename"
+            title={t.rename}
         >
             <Edit2 size={12} />
         </button>
@@ -292,7 +295,7 @@ const RequestRow: React.FC<RequestRowProps> = ({ req, isActive, onClick, onRenam
             "p-1 rounded transition-all",
             isActive ? "text-blue-300 dark:text-blue-400 hover:text-red-500" : "text-gray-400 dark:text-gray-500 hover:text-red-500"
             )}
-            title="Delete"
+            title={t.delete}
         >
             <Trash2 size={12} />
         </button>

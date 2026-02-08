@@ -4,7 +4,8 @@ import { RequestEditor } from './components/RequestEditor';
 import { ResponsePanel } from './components/ResponsePanel';
 import { AppState, Folder, RequestItem, ApiResponse } from './types';
 import { generateId, formatBytes } from './utils/helpers';
-import { Menu, Sun, Moon } from 'lucide-react';
+import { translations, Language } from './utils/translations';
+import { Menu, Sun, Moon, Languages } from 'lucide-react';
 
 const DEFAULT_STATE: AppState = {
   folders: [
@@ -40,6 +41,7 @@ const DEFAULT_STATE: AppState = {
 
 const STORAGE_KEY = 'rc_client_data';
 const THEME_KEY = 'rc_client_theme';
+const LANG_KEY = 'rc_client_lang';
 
 const App: React.FC = () => {
   // --- State ---
@@ -58,6 +60,13 @@ const App: React.FC = () => {
       if (savedTheme === 'light' || savedTheme === 'dark') return savedTheme;
       return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
   });
+  
+  const [lang, setLang] = useState<Language>(() => {
+    const savedLang = localStorage.getItem(LANG_KEY);
+    return (savedLang === 'en' || savedLang === 'zh') ? savedLang : 'en';
+  });
+
+  const t = translations[lang];
 
   // --- Effects ---
   useEffect(() => {
@@ -66,19 +75,26 @@ const App: React.FC = () => {
 
   useEffect(() => {
     localStorage.setItem(THEME_KEY, theme);
-    // Apply class to root for Tailwind Dark Mode
     const root = window.document.documentElement;
     root.classList.remove('light', 'dark');
     root.classList.add(theme);
   }, [theme]);
+
+  useEffect(() => {
+    localStorage.setItem(LANG_KEY, lang);
+  }, [lang]);
 
   // --- Handlers ---
   const toggleTheme = () => {
       setTheme(prev => prev === 'light' ? 'dark' : 'light');
   };
 
+  const toggleLang = () => {
+      setLang(prev => prev === 'en' ? 'zh' : 'en');
+  };
+
   const handleCreateFolder = () => {
-    const name = prompt("Enter folder name:", "New Folder");
+    const name = prompt(t.enterFolderName, t.defaultFolderName);
     if (!name) return;
     const newFolder: Folder = {
       id: generateId(),
@@ -92,7 +108,7 @@ const App: React.FC = () => {
   const handleRenameFolder = (id: string) => {
     const folder = state.folders.find(f => f.id === id);
     if (!folder) return;
-    const name = prompt("Rename folder:", folder.name);
+    const name = prompt(t.renameFolder, folder.name);
     if (!name || name === folder.name) return;
     
     setState(prev => ({
@@ -102,7 +118,7 @@ const App: React.FC = () => {
   };
 
   const handleDeleteFolder = (id: string) => {
-    if (!confirm("Delete this folder and all its requests?")) return;
+    if (!confirm(t.deleteConfirm)) return;
     setState(prev => ({
       ...prev,
       folders: prev.folders.filter(f => f.id !== id),
@@ -125,7 +141,7 @@ const App: React.FC = () => {
   const handleCreateRequest = () => {
      const newReq: RequestItem = {
          id: generateId(),
-         name: 'New Request',
+         name: t.newRequest,
          url: '',
          method: 'GET',
          parentId: null, // History by default
@@ -145,7 +161,7 @@ const App: React.FC = () => {
   const handleRenameRequest = (id: string) => {
     const req = state.requests.find(r => r.id === id);
     if (!req) return;
-    const name = prompt("Rename request:", req.name);
+    const name = prompt(t.renameRequest, req.name);
     if (name === null) return; // Cancelled
     
     setState(prev => ({
@@ -203,12 +219,12 @@ const App: React.FC = () => {
             // Basic validation
             if (Array.isArray(parsed.folders) && Array.isArray(parsed.requests)) {
                 setState(parsed);
-                alert("Import successful!");
+                alert(t.importSuccess);
             } else {
-                alert("Invalid file format.");
+                alert(t.invalidFile);
             }
         } catch (err) {
-            alert("Failed to parse JSON.");
+            alert(t.failedParse);
         }
     };
     reader.readAsText(file);
@@ -217,7 +233,7 @@ const App: React.FC = () => {
   // --- Networking ---
   const handleSendRequest = async (req: RequestItem) => {
     if (!req.url) {
-        alert("Please enter a URL");
+        alert(t.enterUrl);
         return;
     }
 
@@ -275,9 +291,9 @@ const App: React.FC = () => {
     } catch (error: any) {
         setResponse({
             status: 0,
-            statusText: 'Network Error',
+            statusText: t.networkError,
             headers: {},
-            data: error.message || 'Failed to fetch. This might be a CORS issue.',
+            data: error.message || t.corsError,
             size: '0 B',
             time: Math.round(performance.now() - startTime),
             isError: true
@@ -309,6 +325,7 @@ const App: React.FC = () => {
                 onMoveRequest={handleMoveRequest}
                 onExport={handleExport}
                 onImport={handleImport}
+                t={t}
             />
             
             <main className="flex-1 flex flex-col min-w-0 h-full overflow-y-auto bg-gray-100 dark:bg-darker">
@@ -318,21 +335,34 @@ const App: React.FC = () => {
                         <Menu />
                     </button>
                     <span className="font-semibold text-gray-800 dark:text-gray-100 truncate mx-2">
-                        {activeRequest ? (activeRequest.name || 'Untitled') : 'REST Client'}
+                        {activeRequest ? (activeRequest.name || t.untitled) : t.appName}
                     </span>
-                    <button onClick={toggleTheme} className="p-2 -mr-2 text-gray-600 dark:text-gray-300">
-                        {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
-                    </button>
+                    <div className="flex items-center">
+                        <button onClick={toggleLang} className="p-2 text-gray-600 dark:text-gray-300 font-bold text-sm">
+                            {lang === 'en' ? '中' : 'En'}
+                        </button>
+                        <button onClick={toggleTheme} className="p-2 -mr-2 text-gray-600 dark:text-gray-300">
+                            {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+                        </button>
+                    </div>
                 </div>
 
                 <div className="p-4 flex flex-col gap-4">
                     <div className="flex items-center justify-between">
                         <h2 className="hidden md:block text-xl font-semibold text-gray-800 dark:text-gray-100">
-                            {activeRequest ? (activeRequest.name || 'Untitled Request') : 'Dashboard'}
+                            {activeRequest ? (activeRequest.name || t.untitledRequest) : t.dashboard}
                         </h2>
                         
                         <div className="flex items-center gap-4">
-                             {/* Desktop Theme Toggle */}
+                            {/* Desktop Toggles */}
+                             <button 
+                                onClick={toggleLang} 
+                                className="hidden md:flex p-2 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors font-bold text-xs w-9 h-9 items-center justify-center"
+                                title="Switch Language"
+                            >
+                                {lang === 'en' ? '中' : 'En'}
+                            </button>
+
                             <button 
                                 onClick={toggleTheme} 
                                 className="hidden md:flex p-2 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
@@ -346,7 +376,7 @@ const App: React.FC = () => {
                                     onClick={handleCreateRequest}
                                     className="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700 transition"
                                 >
-                                    Create New Request
+                                    {t.createNewRequest}
                                 </button>
                             )}
                         </div>
@@ -359,22 +389,23 @@ const App: React.FC = () => {
                                 request={activeRequest}
                                 onChange={handleUpdateRequest}
                                 onSend={handleSendRequest}
+                                t={t}
                             />
                         </div>
                         <div className="flex-none">
-                            <ResponsePanel response={response} loading={loading} />
+                            <ResponsePanel response={response} loading={loading} t={t} />
                         </div>
                     </div>
                     ) : (
                         <div className="flex flex-col items-center justify-center py-20 text-gray-400 dark:text-gray-500">
                             <div className="text-6xl mb-4">🚀</div>
-                            <h3 className="text-xl font-semibold text-gray-600 dark:text-gray-300">Welcome to RC Rest Client</h3>
-                            <p className="mt-2 text-center max-w-md">Select a request from the sidebar or create a new one to get started. You can organize requests into folders by dragging and dropping.</p>
+                            <h3 className="text-xl font-semibold text-gray-600 dark:text-gray-300">{t.welcomeTitle}</h3>
+                            <p className="mt-2 text-center max-w-md">{t.welcomeMsg}</p>
                             <button 
                             onClick={handleCreateRequest}
                             className="mt-6 bg-white dark:bg-paper border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 px-6 py-2 rounded hover:bg-gray-50 dark:hover:bg-gray-700 transition"
                             >
-                                Create Request
+                                {t.createRequest}
                             </button>
                         </div>
                     )}
