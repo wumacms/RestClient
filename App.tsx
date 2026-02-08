@@ -279,19 +279,21 @@ const App: React.FC = () => {
             if (isBinary) {
                 data = await res.blob();
                 sizeBytes = data.size;
-            } else if (contentType.includes('application/json')) {
-                try {
-                    data = await res.json();
-                    sizeBytes = new Blob([JSON.stringify(data)]).size;
-                } catch {
-                    // Fallback if JSON parse fails
-                    data = await res.text();
-                    sizeBytes = new Blob([data]).size;
-                }
             } else {
-                // Text, HTML, XML, Markdown, etc.
-                data = await res.text();
-                sizeBytes = new Blob([data]).size;
+                // Read text first to avoid "body stream already read" if response.json() fails
+                const text = await res.text();
+                sizeBytes = new Blob([text]).size;
+
+                if (contentType.includes('application/json')) {
+                    try {
+                        data = JSON.parse(text);
+                    } catch {
+                        // Fallback if JSON parse fails
+                        data = text;
+                    }
+                } else {
+                    data = text;
+                }
             }
 
             const resHeaders: Record<string, string> = {};

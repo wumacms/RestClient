@@ -54,7 +54,10 @@ export default defineConfig(({ mode }) => {
 
               // Forward headers
               proxyRes.headers.forEach((value, key) => {
-                res.setHeader(key, value);
+                const lowerKey = key.toLowerCase();
+                if (lowerKey !== 'content-encoding' && lowerKey !== 'content-length' && lowerKey !== 'transfer-encoding' && lowerKey !== 'connection') {
+                  res.setHeader(key, value);
+                }
               });
 
               // Enable CORS for our app
