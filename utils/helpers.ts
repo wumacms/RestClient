@@ -23,12 +23,12 @@ export function formatBytes(bytes: number, decimals = 2) {
 
 export function getMethodColor(method: string) {
   switch (method) {
-    case 'GET': return 'text-green-600 bg-green-50 border-green-200';
-    case 'POST': return 'text-blue-600 bg-blue-50 border-blue-200';
-    case 'PUT': return 'text-orange-600 bg-orange-50 border-orange-200';
-    case 'DELETE': return 'text-red-600 bg-red-50 border-red-200';
-    case 'PATCH': return 'text-yellow-600 bg-yellow-50 border-yellow-200';
-    default: return 'text-gray-600 bg-gray-50 border-gray-200';
+    case 'GET': return 'text-green-600 bg-green-50 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800';
+    case 'POST': return 'text-blue-600 bg-blue-50 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800';
+    case 'PUT': return 'text-orange-600 bg-orange-50 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800';
+    case 'DELETE': return 'text-red-600 bg-red-50 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800';
+    case 'PATCH': return 'text-yellow-600 bg-yellow-50 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800';
+    default: return 'text-gray-600 bg-gray-50 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700';
   }
 }
 
