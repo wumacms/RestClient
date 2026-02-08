@@ -10,7 +10,9 @@ import {
   Download, 
   Upload,
   ChevronRight,
-  ChevronDown
+  ChevronDown,
+  Edit2,
+  FilePlus
 } from 'lucide-react';
 import { cn, getMethodColor } from '../utils/helpers';
 
@@ -20,6 +22,9 @@ interface SidebarProps {
   activeRequestId: string | null;
   onSelectRequest: (id: string) => void;
   onCreateFolder: () => void;
+  onCreateRequest: () => void;
+  onRenameFolder: (id: string) => void;
+  onRenameRequest: (id: string) => void;
   onDeleteFolder: (id: string) => void;
   onDeleteRequest: (id: string) => void;
   onToggleFolder: (id: string) => void;
@@ -34,6 +39,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
   activeRequestId,
   onSelectRequest,
   onCreateFolder,
+  onCreateRequest,
+  onRenameFolder,
+  onRenameRequest,
   onDeleteFolder,
   onDeleteRequest,
   onToggleFolder,
@@ -77,26 +85,35 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* Toolbar */}
-      <div className="px-2 py-2 flex items-center justify-between bg-gray-50 border-b border-gray-200">
-        <button 
-          onClick={onCreateFolder}
-          className="p-1.5 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors text-xs font-medium flex items-center gap-1"
-          title="New Folder"
+      <div className="px-2 py-2 flex flex-col gap-2 bg-gray-50 border-b border-gray-200">
+         <button 
+          onClick={onCreateRequest}
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white py-1.5 px-3 rounded text-sm font-medium flex items-center justify-center gap-2 transition-colors shadow-sm"
         >
-          <Plus size={14} /> Folder
+          <FilePlus size={16} /> New Post
         </button>
-        <div className="flex items-center gap-1">
-          <button 
-            onClick={onExport}
-            className="p-1.5 text-gray-500 hover:text-gray-800 rounded hover:bg-gray-200 transition-colors"
-            title="Export Data"
-          >
-            <Download size={14} />
-          </button>
-          <label className="p-1.5 text-gray-500 hover:text-gray-800 rounded hover:bg-gray-200 transition-colors cursor-pointer" title="Import Data">
-            <Upload size={14} />
-            <input type="file" className="hidden" accept=".json" onChange={onImport} />
-          </label>
+
+        <div className="flex items-center justify-between">
+            <button 
+            onClick={onCreateFolder}
+            className="p-1.5 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors text-xs font-medium flex items-center gap-1"
+            title="New Folder"
+            >
+            <Plus size={14} /> Folder
+            </button>
+            <div className="flex items-center gap-1">
+            <button 
+                onClick={onExport}
+                className="p-1.5 text-gray-500 hover:text-gray-800 rounded hover:bg-gray-200 transition-colors"
+                title="Export Data"
+            >
+                <Download size={14} />
+            </button>
+            <label className="p-1.5 text-gray-500 hover:text-gray-800 rounded hover:bg-gray-200 transition-colors cursor-pointer" title="Import Data">
+                <Upload size={14} />
+                <input type="file" className="hidden" accept=".json" onChange={onImport} />
+            </label>
+            </div>
         </div>
       </div>
 
@@ -122,6 +139,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 req={req} 
                 isActive={req.id === activeRequestId}
                 onClick={() => onSelectRequest(req.id)}
+                onRename={() => onRenameRequest(req.id)}
                 onDelete={() => onDeleteRequest(req.id)}
                 onDragStart={(e) => handleDragStart(e, req.id)}
               />
@@ -149,18 +167,28 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   className="flex items-center justify-between px-2 py-1.5 hover:bg-gray-100 cursor-pointer group"
                   onClick={() => onToggleFolder(folder.id)}
                 >
-                  <div className="flex items-center gap-2 text-gray-700 text-sm font-medium">
+                  <div className="flex items-center gap-2 text-gray-700 text-sm font-medium truncate">
                     {folder.isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                    {folder.isOpen ? <FolderOpen size={16} className="text-yellow-500" /> : <FolderIcon size={16} className="text-yellow-500" />}
-                    {folder.name} 
-                    <span className="text-xs text-gray-400 font-normal">({folderRequests.length})</span>
+                    {folder.isOpen ? <FolderOpen size={16} className="text-yellow-500 flex-shrink-0" /> : <FolderIcon size={16} className="text-yellow-500 flex-shrink-0" />}
+                    <span className="truncate">{folder.name}</span>
+                    <span className="text-xs text-gray-400 font-normal flex-shrink-0">({folderRequests.length})</span>
                   </div>
-                  <button 
-                    onClick={(e) => { e.stopPropagation(); onDeleteFolder(folder.id); }}
-                    className="opacity-0 group-hover:opacity-100 p-1 text-gray-400 hover:text-red-500 transition-opacity"
-                  >
-                    <Trash2 size={12} />
-                  </button>
+                  <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button 
+                        onClick={(e) => { e.stopPropagation(); onRenameFolder(folder.id); }}
+                        className="p-1 text-gray-400 hover:text-blue-500 transition-colors"
+                        title="Rename"
+                    >
+                        <Edit2 size={12} />
+                    </button>
+                    <button 
+                        onClick={(e) => { e.stopPropagation(); onDeleteFolder(folder.id); }}
+                        className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                        title="Delete"
+                    >
+                        <Trash2 size={12} />
+                    </button>
+                  </div>
                 </div>
 
                 {folder.isOpen && (
@@ -171,6 +199,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         req={req} 
                         isActive={req.id === activeRequestId}
                         onClick={() => onSelectRequest(req.id)}
+                        onRename={() => onRenameRequest(req.id)}
                         onDelete={() => onDeleteRequest(req.id)}
                         onDragStart={(e) => handleDragStart(e, req.id)}
                       />
@@ -193,11 +222,12 @@ interface RequestRowProps {
   req: RequestItem;
   isActive: boolean;
   onClick: () => void;
+  onRename: () => void;
   onDelete: () => void;
   onDragStart: (e: React.DragEvent) => void;
 }
 
-const RequestRow: React.FC<RequestRowProps> = ({ req, isActive, onClick, onDelete, onDragStart }) => {
+const RequestRow: React.FC<RequestRowProps> = ({ req, isActive, onClick, onRename, onDelete, onDragStart }) => {
   return (
     <div
       draggable
@@ -210,7 +240,7 @@ const RequestRow: React.FC<RequestRowProps> = ({ req, isActive, onClick, onDelet
     >
       <div className="flex items-center gap-2 overflow-hidden">
         <span className={cn(
-          "text-[10px] font-bold px-1.5 py-0.5 rounded border min-w-[36px] text-center",
+          "text-[10px] font-bold px-1.5 py-0.5 rounded border min-w-[36px] text-center flex-shrink-0",
           getMethodColor(req.method)
         )}>
           {req.method}
@@ -219,15 +249,28 @@ const RequestRow: React.FC<RequestRowProps> = ({ req, isActive, onClick, onDelet
           {req.name || req.url || "New Request"}
         </span>
       </div>
-      <button 
-        onClick={(e) => { e.stopPropagation(); onDelete(); }}
-        className={cn(
-          "p-1 rounded opacity-0 group-hover:opacity-100 transition-all",
-          isActive ? "text-blue-300 hover:text-red-500 hover:bg-blue-100" : "text-gray-400 hover:text-red-500 hover:bg-gray-200"
-        )}
-      >
-        <Trash2 size={12} />
-      </button>
+      <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
+        <button 
+            onClick={(e) => { e.stopPropagation(); onRename(); }}
+            className={cn(
+            "p-1 rounded transition-all",
+            isActive ? "text-blue-300 hover:text-blue-600" : "text-gray-400 hover:text-blue-600"
+            )}
+            title="Rename"
+        >
+            <Edit2 size={12} />
+        </button>
+        <button 
+            onClick={(e) => { e.stopPropagation(); onDelete(); }}
+            className={cn(
+            "p-1 rounded transition-all",
+            isActive ? "text-blue-300 hover:text-red-500" : "text-gray-400 hover:text-red-500"
+            )}
+            title="Delete"
+        >
+            <Trash2 size={12} />
+        </button>
+      </div>
     </div>
   );
 };

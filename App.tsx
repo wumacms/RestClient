@@ -67,6 +67,18 @@ const App: React.FC = () => {
     setState(prev => ({ ...prev, folders: [...prev.folders, newFolder] }));
   };
 
+  const handleRenameFolder = (id: string) => {
+    const folder = state.folders.find(f => f.id === id);
+    if (!folder) return;
+    const name = prompt("Rename folder:", folder.name);
+    if (!name || name === folder.name) return;
+    
+    setState(prev => ({
+        ...prev,
+        folders: prev.folders.map(f => f.id === id ? { ...f, name } : f)
+    }));
+  };
+
   const handleDeleteFolder = (id: string) => {
     if (!confirm("Delete this folder and all its requests?")) return;
     setState(prev => ({
@@ -89,17 +101,12 @@ const App: React.FC = () => {
   };
 
   const handleCreateRequest = () => {
-     // Not used directly in sidebar but logic exists if we want a generic "New" button
-     // Current Sidebar uses "New Folder", logic below handles implicit creation via list if needed,
-     // but for now we'll stick to editing existing or duplicating. 
-     // Let's add a "New Request" feature implicitly: 
-     // Actually, let's just create a new request in History when "New Request" is conceptually needed.
      const newReq: RequestItem = {
          id: generateId(),
-         name: '',
+         name: 'New Request',
          url: '',
          method: 'GET',
-         parentId: null,
+         parentId: null, // History by default
          headers: [],
          bodyType: 'none',
          bodyContent: '',
@@ -110,6 +117,19 @@ const App: React.FC = () => {
          requests: [newReq, ...prev.requests],
          activeRequestId: newReq.id
      }));
+     setResponse(null);
+  };
+
+  const handleRenameRequest = (id: string) => {
+    const req = state.requests.find(r => r.id === id);
+    if (!req) return;
+    const name = prompt("Rename request:", req.name);
+    if (name === null) return; // Cancelled
+    
+    setState(prev => ({
+        ...prev,
+        requests: prev.requests.map(r => r.id === id ? { ...r, name: name || req.url } : r)
+    }));
   };
 
   const handleDeleteRequest = (id: string) => {
@@ -255,6 +275,9 @@ const App: React.FC = () => {
         activeRequestId={state.activeRequestId}
         onSelectRequest={handleSelectRequest}
         onCreateFolder={handleCreateFolder}
+        onCreateRequest={handleCreateRequest}
+        onRenameFolder={handleRenameFolder}
+        onRenameRequest={handleRenameRequest}
         onDeleteFolder={handleDeleteFolder}
         onDeleteRequest={handleDeleteRequest}
         onToggleFolder={handleToggleFolder}
