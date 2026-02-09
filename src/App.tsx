@@ -144,7 +144,7 @@ const App: React.FC = () => {
                   {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
                 </button>
 
-                {!activeRequest && (
+                {state.requests.length > 0 && !activeRequest && (
                   <button
                     onClick={handleCreateRequest}
                     className="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700 transition"

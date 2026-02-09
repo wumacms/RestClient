@@ -11,8 +11,12 @@ interface RequestRowProps {
   onRename: () => void;
   onDelete: () => void;
   onDragStart: (e: React.DragEvent) => void;
+  onDragEnd?: () => void;
+  onDragEnter?: (e: React.DragEvent) => void;
+  onDragLeave?: (e: React.DragEvent) => void;
   onDrop?: (e: React.DragEvent) => void;
   onDragOver?: (e: React.DragEvent) => void;
+  onMouseDown?: (e: React.MouseEvent) => void;
   t: typeof translations.en;
 }
 
@@ -23,19 +27,28 @@ export const RequestRow: React.FC<RequestRowProps> = ({
   onRename,
   onDelete,
   onDragStart,
+  onDragEnd,
+  onDragEnter,
+  onDragLeave,
   onDrop,
   onDragOver,
+  onMouseDown,
   t
 }) => {
   return (
     <div
-      draggable
+      draggable={true}
       onDragStart={onDragStart}
+      onDragEnd={onDragEnd}
+      onDragEnter={onDragEnter}
+      onDragLeave={onDragLeave}
       onDrop={onDrop}
       onDragOver={onDragOver}
+      onMouseDown={onMouseDown}
       onClick={onClick}
+      style={{ WebkitUserDrag: 'element' } as React.CSSProperties}
       className={cn(
-        'group flex items-center justify-between px-2 py-2 rounded-md cursor-pointer transition-all border border-transparent',
+        'group flex items-center justify-between px-2 py-2 rounded-md cursor-pointer transition-all border border-transparent select-none',
         isActive
           ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-100 dark:border-blue-900/50'
           : 'hover:bg-gray-100 dark:hover:bg-gray-800 hover:border-gray-200 dark:hover:border-gray-700'
