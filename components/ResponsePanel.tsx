@@ -168,14 +168,42 @@ export const ResponsePanel: React.FC<ResponsePanelProps> = ({ response, loading,
         else if (contentType.includes('zip')) ext = 'zip';
         else if (contentType.includes('xml')) ext = 'xml';
 
+        // If extension is still default 'txt', try to guess from URL
+        if (ext === 'txt' && response?.url) {
+            try {
+                const urlPath = new URL(response.url).pathname;
+                const urlExt = urlPath.split('.').pop()?.toLowerCase();
+                if (urlExt && /^[a-z0-9]+$/i.test(urlExt) && urlExt.length < 10) {
+                    ext = urlExt;
+                }
+            } catch (e) {
+                // Ignore URL parsing errors
+            }
+        }
+
         let filename = `response-${Date.now()}.${ext}`;
 
         // Check Content-Disposition
         const disposition = response?.headers['content-disposition'];
         if (disposition) {
-            const match = disposition.match(/filename="?([^"]+)"?/);
-            if (match && match[1]) {
-                filename = match[1];
+            // First try RFC 5987 (filename*=utf-8''encoded_name)
+            const matchUtf8 = disposition.match(/filename\*=utf-8''([^;]+)/i);
+            if (matchUtf8 && matchUtf8[1]) {
+                try {
+                    filename = decodeURIComponent(matchUtf8[1]);
+                } catch (e) {
+                    filename = matchUtf8[1];
+                }
+            } else {
+                // Fallback to standard filename
+                const match = disposition.match(/filename="?([^";]+)"?/i);
+                if (match && match[1]) {
+                    try {
+                        filename = decodeURIComponent(match[1]);
+                    } catch (e) {
+                        filename = match[1];
+                    }
+                }
             }
         }
 

@@ -35,6 +35,7 @@ export interface ApiResponse {
   size: string;
   time: number; // in ms
   isError: boolean;
+  url?: string;
 }
 
 export interface AppState {

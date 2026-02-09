@@ -307,7 +307,8 @@ const App: React.FC = () => {
                 contentType: contentTypeHeader || 'unknown',
                 size: formatBytes(sizeBytes),
                 time: Math.round(endTime - startTime),
-                isError: !res.ok
+                isError: !res.ok,
+                url: req.url
             });
 
         } catch (error: any) {
