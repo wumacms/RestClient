@@ -310,7 +310,7 @@ export const ResponsePanel: React.FC<ResponsePanelProps> = ({ response, loading,
                                 : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
                         )}
                     >
-                        {t.headers.toUpperCase()}
+                        {t.responseHeaders.toUpperCase()}
                     </button>
                 </div>
                 <div className="flex items-center gap-1">

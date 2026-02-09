@@ -43,10 +43,26 @@ export default defineConfig(({ mode }) => {
                 body = Buffer.concat(chunks);
               }
 
+              // Create a custom dispatcher to handle connection issues
+              // We need to use 'undici' which is what Node's fetch uses internally
+              // @ts-ignore
+              const { Agent } = await import('undici');
+              const dispatcher = new Agent({
+                connect: {
+                  timeout: 60000
+                },
+                bodyTimeout: 60000,
+                headersTimeout: 60000,
+                keepAliveTimeout: 10000,
+                keepAliveMaxTimeout: 10000
+              });
+
               const proxyRes = await fetch(targetUrl, {
                 method: req.method,
                 headers: headers,
-                body: body as any
+                body: body as any,
+                // @ts-ignore - dispatcher is supported in Node 18+ fetch
+                dispatcher: dispatcher
               });
 
               res.statusCode = proxyRes.status;
