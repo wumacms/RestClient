@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { Modal } from './components/Modal';
 import { Sidebar } from './components/Sidebar';
 import { RequestEditor } from './components/RequestEditor';
 import { ResponsePanel } from './components/ResponsePanel';
@@ -27,12 +28,28 @@ const App: React.FC = () => {
     handleUpdateRequest,
     handleMoveRequest,
     handleExport,
-    handleImport
+    handleImport,
+    activeModal,
+    setActiveModal,
+    confirmCreateFolder,
+    confirmRenameFolder,
+    confirmRenameRequest,
+    confirmDeleteFolder,
+    confirmDeleteRequest
   } = useAppState();
 
   const [response, setResponse] = useState<ApiResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [inputValue, setInputValue] = useState('');
+
+  useEffect(() => {
+    if (activeModal.initialValue) {
+      setInputValue(activeModal.initialValue);
+    } else {
+      setInputValue('');
+    }
+  }, [activeModal]);
 
   const onSelectRequest = (id: string) => {
     handleSelectRequest(id);
@@ -171,6 +188,159 @@ const App: React.FC = () => {
         </main>
       </div>
       <Toaster theme={theme} richColors position="top-right" closeButton />
+
+      {/* Create Folder Modal */}
+      <Modal
+        isOpen={activeModal.type === 'createFolder'}
+        onClose={() => setActiveModal({ type: null })}
+        title={t.createNewRequest ? t.defaultFolderName : 'Create Folder'} // Fallback title
+      >
+        <div className="flex flex-col gap-4">
+          <p className="text-gray-600 dark:text-gray-300">{t.enterFolderName}</p>
+          <input
+            type="text"
+            className="border-gray-300 dark:border-gray-600 dark:bg-darker dark:text-gray-100 rounded-md p-2 w-full border"
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') confirmCreateFolder(inputValue);
+            }}
+            autoFocus
+          />
+          <div className="flex justify-end gap-2">
+            <button
+              onClick={() => setActiveModal({ type: null })}
+              className="px-4 py-2 rounded text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => confirmCreateFolder(inputValue)}
+              className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700"
+            >
+              Create
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Rename Folder Modal */}
+      <Modal
+        isOpen={activeModal.type === 'renameFolder'}
+        onClose={() => setActiveModal({ type: null })}
+        title={t.renameFolder}
+      >
+        <div className="flex flex-col gap-4">
+          <input
+            type="text"
+            className="border-gray-300 dark:border-gray-600 dark:bg-darker dark:text-gray-100 rounded-md p-2 w-full border"
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') confirmRenameFolder(inputValue);
+            }}
+            autoFocus
+          />
+          <div className="flex justify-end gap-2">
+            <button
+              onClick={() => setActiveModal({ type: null })}
+              className="px-4 py-2 rounded text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => confirmRenameFolder(inputValue)}
+              className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700"
+            >
+              Rename
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Rename Request Modal */}
+      <Modal
+        isOpen={activeModal.type === 'renameRequest'}
+        onClose={() => setActiveModal({ type: null })}
+        title={t.renameRequest}
+      >
+        <div className="flex flex-col gap-4">
+          <input
+            type="text"
+            className="border-gray-300 dark:border-gray-600 dark:bg-darker dark:text-gray-100 rounded-md p-2 w-full border"
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') confirmRenameRequest(inputValue);
+            }}
+            autoFocus
+          />
+          <div className="flex justify-end gap-2">
+            <button
+              onClick={() => setActiveModal({ type: null })}
+              className="px-4 py-2 rounded text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => confirmRenameRequest(inputValue)}
+              className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700"
+            >
+              Rename
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Delete Folder Modal */}
+      <Modal
+        isOpen={activeModal.type === 'deleteFolder'}
+        onClose={() => setActiveModal({ type: null })}
+        title={t.delete}
+      >
+        <div className="flex flex-col gap-4">
+          <p className="text-gray-600 dark:text-gray-300">{t.deleteConfirm}</p>
+          <div className="flex justify-end gap-2">
+            <button
+              onClick={() => setActiveModal({ type: null })}
+              className="px-4 py-2 rounded text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={confirmDeleteFolder}
+              className="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Delete Request Modal */}
+      <Modal
+        isOpen={activeModal.type === 'deleteRequest'}
+        onClose={() => setActiveModal({ type: null })}
+        title={t.delete}
+      >
+        <div className="flex flex-col gap-4">
+          <p className="text-gray-600 dark:text-gray-300">Are you sure you want to delete this request?</p>
+          <div className="flex justify-end gap-2">
+            <button
+              onClick={() => setActiveModal({ type: null })}
+              className="px-4 py-2 rounded text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={confirmDeleteRequest}
+              className="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };

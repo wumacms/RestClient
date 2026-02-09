@@ -11,6 +11,8 @@ interface RequestRowProps {
   onRename: () => void;
   onDelete: () => void;
   onDragStart: (e: React.DragEvent) => void;
+  onDrop?: (e: React.DragEvent) => void;
+  onDragOver?: (e: React.DragEvent) => void;
   t: typeof translations.en;
 }
 
@@ -21,12 +23,16 @@ export const RequestRow: React.FC<RequestRowProps> = ({
   onRename,
   onDelete,
   onDragStart,
+  onDrop,
+  onDragOver,
   t
 }) => {
   return (
     <div
       draggable
       onDragStart={onDragStart}
+      onDrop={onDrop}
+      onDragOver={onDragOver}
       onClick={onClick}
       className={cn(
         'group flex items-center justify-between px-2 py-2 rounded-md cursor-pointer transition-all border border-transparent',

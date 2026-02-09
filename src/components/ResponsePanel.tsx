@@ -5,6 +5,11 @@ import { Copy, Check, Download, Eye, FileText, FileCode } from 'lucide-react';
 import { Translations } from '../utils/translations';
 import { useResponseDetection } from '../hooks/useResponseDetection';
 import { PreviewPanel } from './PreviewPanel';
+import { save } from '@tauri-apps/plugin-dialog';
+import { writeFile } from '@tauri-apps/plugin-fs';
+import { isTauri } from '@tauri-apps/api/core';
+import { toast } from 'sonner';
+import { revealItemInDir } from '@tauri-apps/plugin-opener';
 
 interface ResponsePanelProps {
   response: ApiResponse | null;
@@ -98,24 +103,11 @@ export const ResponsePanel: React.FC<ResponsePanelProps> = ({ response, loading,
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleDownload = () => {
-    let url = blobUrl;
-    let cleanup = false;
-
-    if (!url) {
-      const dataStr =
-        typeof response.data === 'object'
-          ? JSON.stringify(response.data, null, 2)
-          : String(response.data);
-      const blob = new Blob([dataStr], { type: contentType || 'text/plain' });
-      url = URL.createObjectURL(blob);
-      cleanup = true;
-    }
-
-    const a = document.createElement('a');
-    a.href = url!;
-
+  const handleDownload = async () => {
+    let filename = `response-${Date.now()}.txt`;
     let ext = 'txt';
+
+    // Determine extension
     if (contentType.includes('json')) ext = 'json';
     else if (isHtml) ext = 'html';
     else if (contentType.includes('markdown')) ext = 'md';
@@ -142,8 +134,9 @@ export const ResponsePanel: React.FC<ResponsePanelProps> = ({ response, loading,
       } catch (e) { }
     }
 
-    let filename = `response-${Date.now()}.${ext}`;
+    filename = `response-${Date.now()}.${ext}`;
 
+    // Handle Content-Disposition
     const disposition = response?.headers['content-disposition'];
     if (disposition) {
       const matchUtf8 = disposition.match(/filename\*=utf-8''([^;]+)/i);
@@ -165,11 +158,77 @@ export const ResponsePanel: React.FC<ResponsePanelProps> = ({ response, loading,
       }
     }
 
-    a.download = filename;
-    a.click();
 
-    if (cleanup) {
-      URL.revokeObjectURL(url!);
+
+    if (isTauri()) {
+      try {
+        const filePath = await save({
+          defaultPath: filename,
+          filters: [
+            {
+              name: 'Detected File Type',
+              extensions: [ext]
+            },
+            {
+              name: 'All Files',
+              extensions: ['*']
+            }
+          ]
+        });
+
+        if (filePath) {
+          let dataToWrite: Uint8Array;
+
+          if (response?.data instanceof Blob) {
+            dataToWrite = new Uint8Array(await response.data.arrayBuffer());
+          } else {
+            const dataStr =
+              typeof response?.data === 'object'
+                ? JSON.stringify(response.data, null, 2)
+                : String(response?.data);
+            dataToWrite = new TextEncoder().encode(dataStr);
+          }
+
+          await writeFile(filePath, dataToWrite);
+          toast.success(`${t.downloadSuccess} ${filePath}`, {
+            action: {
+              label: t.openInFolder,
+              onClick: () => revealItemInDir(filePath)
+            }
+          });
+        }
+      } catch (err) {
+        console.error('Failed to save file:', err);
+        toast.error(`${t.downloadError} ${err instanceof Error ? err.message : String(err)}`);
+      }
+    } else {
+      try {
+        let url = blobUrl;
+        let cleanup = false;
+
+        if (!url) {
+          const dataStr =
+            typeof response?.data === 'object'
+              ? JSON.stringify(response.data, null, 2)
+              : String(response?.data);
+          const blob = new Blob([dataStr], { type: contentType || 'text/plain' });
+          url = URL.createObjectURL(blob);
+          cleanup = true;
+        }
+
+        const a = document.createElement('a');
+        a.href = url!;
+        a.download = filename;
+        a.click();
+
+        if (cleanup) {
+          URL.revokeObjectURL(url!);
+        }
+        toast.success(t.downloadStarted);
+      } catch (err) {
+        console.error('Failed to download file:', err);
+        toast.error(`${t.downloadError} ${err instanceof Error ? err.message : String(err)}`);
+      }
     }
   };
 

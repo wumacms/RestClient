@@ -72,6 +72,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const handleDrop = (e: React.DragEvent, targetFolderId: string | null) => {
     e.preventDefault();
+    e.stopPropagation();
     const reqId = e.dataTransfer.getData('text/plain');
     if (reqId) {
       onMoveRequest(reqId, targetFolderId);
@@ -170,6 +171,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   onRename={() => onRenameRequest(req.id)}
                   onDelete={() => onDeleteRequest(req.id)}
                   onDragStart={(e) => handleDragStart(e, req.id)}
+                  onDragOver={handleDragOver}
+                  onDrop={(e) => handleDrop(e, null)}
                   t={t}
                 />
               ))}
@@ -248,6 +251,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                           onRename={() => onRenameRequest(req.id)}
                           onDelete={() => onDeleteRequest(req.id)}
                           onDragStart={(e) => handleDragStart(e, req.id)}
+                          onDragOver={handleDragOver}
+                          onDrop={(e) => handleDrop(e, folder.id)}
                           t={t}
                         />
                       ))}

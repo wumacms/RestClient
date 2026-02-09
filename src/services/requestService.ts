@@ -1,4 +1,6 @@
 import { ApiResponse, RequestItem } from '../types';
+import { isTauri } from '@tauri-apps/api/core';
+import { fetch as tauriFetch } from '@tauri-apps/plugin-http';
 import { formatBytes } from '../utils/helpers';
 import { Translations } from '../utils/translations';
 
@@ -33,8 +35,13 @@ export const requestService = {
         }
       }
 
-      const proxyUrl = `/api/proxy?url=${encodeURIComponent(req.url)}`;
-      const res = await fetch(proxyUrl, options);
+      let res: Response;
+      if (isTauri()) {
+        res = await tauriFetch(req.url, options);
+      } else {
+        const proxyUrl = `/api/proxy?url=${encodeURIComponent(req.url)}`;
+        res = await fetch(proxyUrl, options);
+      }
       const endTime = performance.now();
 
       const contentTypeHeader = res.headers.get('content-type');
@@ -46,7 +53,8 @@ export const requestService = {
       const isBinary = /image|video|audio|pdf|zip|octet-stream/.test(contentType);
 
       if (isBinary) {
-        data = await res.blob();
+        const blobData = await res.blob();
+        data = new Blob([blobData], { type: contentType || 'application/octet-stream' });
         sizeBytes = data.size;
       } else {
         const text = await res.text();

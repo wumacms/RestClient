@@ -47,9 +47,8 @@
     *   [x] 为 `requestService` 和 `utils` 添加基础单元测试。
 
 ### 3.2 中期迭代 (P1 - Medium Priority)
-1.  **优化部署架构**：
-    *   方案 A（纯前端）：明确项目仅作为 Electron/Tauri 桌面应用运行（自带 Node 环境，无需代理）。
-    *   方案 B（Web 部署）：开发一个轻量级的 Node.js/Edge Function 中间件作为生产环境代理。
+1.  **优化部署架构** (已完成)：
+    *   [x] 方案 A（纯前端）：引入 Tauri v2 实现桌面环境运行，利用 Rust 后端处理网络请求，彻底解决 CORS 问题。
 2.  **增强 UI 反馈** (已完成)：
     *   [x] 引入 `sonner` 替换 `alert`。
     *   [x] 添加全局 `ErrorBoundary` 组件。

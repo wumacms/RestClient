@@ -1,5 +1,5 @@
 {
-  "name": "rc-rest-client",
+  "name": "RestClient",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -13,6 +13,11 @@
     "test": "vitest"
   },
   "dependencies": {
+    "@tauri-apps/api": "^2.10.1",
+    "@tauri-apps/plugin-dialog": "~2",
+    "@tauri-apps/plugin-fs": "^2.4.5",
+    "@tauri-apps/plugin-http": "~2",
+    "@tauri-apps/plugin-opener": "~2.5.3",
     "clsx": "^2.1.1",
     "lucide-react": "^0.563.0",
     "react": "^19.2.4",
@@ -24,6 +29,7 @@
     "tailwind-merge": "^3.4.0"
   },
   "devDependencies": {
+    "@tauri-apps/cli": "^2.10.0",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@types/node": "^22.14.0",

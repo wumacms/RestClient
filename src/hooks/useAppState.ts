@@ -1,42 +1,33 @@
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
+import { isTauri } from '@tauri-apps/api/core';
+import { save, open } from '@tauri-apps/plugin-dialog';
+import { writeTextFile, readTextFile } from '@tauri-apps/plugin-fs';
 import { AppState, Folder, RequestItem } from '../types';
 import { generateId } from '../utils/helpers';
 import { translations, Language } from '../utils/translations';
 
 const DEFAULT_STATE: AppState = {
-  folders: [
-    { id: '1', name: 'User API', isOpen: true, createdAt: Date.now() },
-    { id: '2', name: 'Auth Service', isOpen: false, createdAt: Date.now() }
-  ],
-  requests: [
-    {
-      id: 'r1',
-      name: 'Get Users',
-      method: 'GET',
-      url: 'https://jsonplaceholder.typicode.com/users',
-      parentId: '1',
-      headers: [],
-      bodyType: 'none',
-      bodyContent: '',
-      createdAt: Date.now()
-    },
-    {
-      id: 'r2',
-      name: 'Create Post',
-      method: 'POST',
-      url: 'https://jsonplaceholder.typicode.com/posts',
-      parentId: null,
-      headers: [{ id: 'h1', key: 'Content-Type', value: 'application/json', enabled: true }],
-      bodyType: 'json',
-      bodyContent: '{\n  "title": "foo",\n  "body": "bar",\n  "userId": 1\n}',
-      createdAt: Date.now()
-    }
-  ],
-  activeRequestId: 'r1'
+  folders: [],
+  requests: [],
+  activeRequestId: null
 };
 
-const STORAGE_KEY = 'rc_client_data';
+export type ModalType =
+  | 'createFolder'
+  | 'renameFolder'
+  | 'deleteFolder'
+  | 'renameRequest'
+  | 'deleteRequest'
+  | null;
+
+export interface ModalState {
+  type: ModalType;
+  id?: string;
+  initialValue?: string;
+}
+
+const STORAGE_KEY = 'rc_client_data_v2';
 const THEME_KEY = 'rc_client_theme';
 const LANG_KEY = 'rc_client_lang';
 
@@ -49,15 +40,19 @@ export const useAppState = () => {
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     const savedTheme = localStorage.getItem(THEME_KEY);
     if (savedTheme === 'light' || savedTheme === 'dark') return savedTheme;
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    // Default to light
+    return 'light';
   });
 
   const [lang, setLang] = useState<Language>(() => {
     const savedLang = localStorage.getItem(LANG_KEY);
-    return savedLang === 'en' || savedLang === 'zh' ? savedLang : 'en';
+    // Default to zh
+    return savedLang === 'en' || savedLang === 'zh' ? savedLang : 'zh';
   });
 
   const t = translations[lang];
+
+  const [activeModal, setActiveModal] = useState<ModalState>({ type: null });
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
@@ -77,8 +72,11 @@ export const useAppState = () => {
   const toggleTheme = () => setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
   const toggleLang = () => setLang((prev) => (prev === 'en' ? 'zh' : 'en'));
 
-  const handleCreateFolder = () => {
-    const name = prompt(t.enterFolderName, t.defaultFolderName);
+  const openCreateFolderModal = () => {
+    setActiveModal({ type: 'createFolder' });
+  };
+
+  const confirmCreateFolder = (name: string) => {
     if (!name) return;
     const newFolder: Folder = {
       id: generateId(),
@@ -87,27 +85,38 @@ export const useAppState = () => {
       createdAt: Date.now()
     };
     setState((prev) => ({ ...prev, folders: [...prev.folders, newFolder] }));
+    setActiveModal({ type: null });
   };
 
-  const handleRenameFolder = (id: string) => {
+  const openRenameFolderModal = (id: string) => {
     const folder = state.folders.find((f) => f.id === id);
     if (!folder) return;
-    const name = prompt(t.renameFolder, folder.name);
-    if (!name || name === folder.name) return;
+    setActiveModal({ type: 'renameFolder', id, initialValue: folder.name });
+  };
 
+  const confirmRenameFolder = (name: string) => {
+    if (!activeModal.id || !name) return;
+    const id = activeModal.id;
     setState((prev) => ({
       ...prev,
       folders: prev.folders.map((f) => (f.id === id ? { ...f, name } : f))
     }));
+    setActiveModal({ type: null });
   };
 
-  const handleDeleteFolder = (id: string) => {
-    if (!confirm(t.deleteConfirm)) return;
+  const openDeleteFolderModal = (id: string) => {
+    setActiveModal({ type: 'deleteFolder', id });
+  };
+
+  const confirmDeleteFolder = () => {
+    if (!activeModal.id) return;
+    const id = activeModal.id;
     setState((prev) => ({
       ...prev,
       folders: prev.folders.filter((f) => f.id !== id),
       requests: prev.requests.filter((r) => r.parentId !== id)
     }));
+    setActiveModal({ type: null });
   };
 
   const handleToggleFolder = (id: string) => {
@@ -140,19 +149,30 @@ export const useAppState = () => {
     }));
   };
 
-  const handleRenameRequest = (id: string) => {
+  const openRenameRequestModal = (id: string) => {
     const req = state.requests.find((r) => r.id === id);
     if (!req) return;
-    const name = prompt(t.renameRequest, req.name);
-    if (name === null) return;
-
-    setState((prev) => ({
-      ...prev,
-      requests: prev.requests.map((r) => (r.id === id ? { ...r, name: name || req.url } : r))
-    }));
+    setActiveModal({ type: 'renameRequest', id, initialValue: req.name });
   };
 
-  const handleDeleteRequest = (id: string) => {
+  const confirmRenameRequest = (name: string) => {
+    if (!activeModal.id || !name) return;
+    const id = activeModal.id;
+    const req = state.requests.find((r) => r.id === id);
+    setState((prev) => ({
+      ...prev,
+      requests: prev.requests.map((r) => (r.id === id ? { ...r, name: name || (req ? req.url : '') } : r))
+    }));
+    setActiveModal({ type: null });
+  };
+
+  const openDeleteRequestModal = (id: string) => {
+    setActiveModal({ type: 'deleteRequest', id });
+  };
+
+  const confirmDeleteRequest = () => {
+    if (!activeModal.id) return;
+    const id = activeModal.id;
     setState((prev) => {
       const remaining = prev.requests.filter((r) => r.id !== id);
       let newActive = prev.activeRequestId;
@@ -165,6 +185,7 @@ export const useAppState = () => {
         activeRequestId: newActive
       };
     });
+    setActiveModal({ type: null });
   };
 
   const handleUpdateRequest = (updatedReq: RequestItem) => {
@@ -181,34 +202,82 @@ export const useAppState = () => {
     }));
   };
 
-  const handleExport = () => {
-    const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `rc-client-backup-${new Date().toISOString().split('T')[0]}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+  const handleExport = async () => {
+    const dataStr = JSON.stringify(state, null, 2);
+
+    if (isTauri()) {
+      try {
+        const filePath = await save({
+          filters: [{
+            name: 'JSON',
+            extensions: ['json']
+          }],
+          defaultPath: `rc-client-backup-${new Date().toISOString().split('T')[0]}.json`
+        });
+
+        if (filePath) {
+          await writeTextFile(filePath, dataStr);
+          toast.success(t.exportSuccess || 'Export successful');
+        }
+      } catch (err: any) {
+        console.error(err);
+        toast.error(t.exportError || 'Export failed: ' + err.message);
+      }
+    } else {
+      const blob = new Blob([dataStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `rc-client-backup-${new Date().toISOString().split('T')[0]}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
   };
 
-  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (evt) => {
+  const handleImport = async (e?: React.ChangeEvent<HTMLInputElement>) => {
+    if (isTauri()) {
       try {
-        const parsed = JSON.parse(evt.target?.result as string);
-        if (Array.isArray(parsed.folders) && Array.isArray(parsed.requests)) {
-          setState(parsed);
-          toast.success(t.importSuccess);
-        } else {
-          toast.error(t.invalidFile);
+        const filePath = await open({
+          multiple: false,
+          filters: [{
+            name: 'JSON',
+            extensions: ['json']
+          }]
+        });
+
+        if (filePath) {
+          const content = await readTextFile(filePath);
+          const parsed = JSON.parse(content);
+          if (Array.isArray(parsed.folders) && Array.isArray(parsed.requests)) {
+            setState(parsed);
+            toast.success(t.importSuccess);
+          } else {
+            toast.error(t.invalidFile);
+          }
         }
-      } catch (err) {
+      } catch (err: any) {
+        console.error(err);
         toast.error(t.failedParse);
       }
-    };
-    reader.readAsText(file);
+    } else {
+      const file = e?.target.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        try {
+          const parsed = JSON.parse(evt.target?.result as string);
+          if (Array.isArray(parsed.folders) && Array.isArray(parsed.requests)) {
+            setState(parsed);
+            toast.success(t.importSuccess);
+          } else {
+            toast.error(t.invalidFile);
+          }
+        } catch (err) {
+          toast.error(t.failedParse);
+        }
+      };
+      reader.readAsText(file);
+    }
   };
 
   return {
@@ -218,14 +287,21 @@ export const useAppState = () => {
     t,
     toggleTheme,
     toggleLang,
-    handleCreateFolder,
-    handleRenameFolder,
-    handleDeleteFolder,
+    activeModal,
+    setActiveModal,
+    handleCreateFolder: openCreateFolderModal,
+    confirmCreateFolder,
+    handleRenameFolder: openRenameFolderModal,
+    confirmRenameFolder,
+    handleDeleteFolder: openDeleteFolderModal,
+    confirmDeleteFolder,
     handleToggleFolder,
     handleSelectRequest,
     handleCreateRequest,
-    handleRenameRequest,
-    handleDeleteRequest,
+    handleRenameRequest: openRenameRequestModal,
+    confirmRenameRequest,
+    handleDeleteRequest: openDeleteRequestModal,
+    confirmDeleteRequest,
     handleUpdateRequest,
     handleMoveRequest,
     handleExport,

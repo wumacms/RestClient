@@ -2,7 +2,7 @@ export type Language = 'en' | 'zh';
 
 export const translations = {
   en: {
-    appName: 'REST Client',
+    appName: 'RestClient',
     dashboard: 'Dashboard',
     newRequest: 'New Request',
     createRequest: 'Create Request',
@@ -43,7 +43,7 @@ export const translations = {
     sendPrompt: 'Send a request to see the response here.',
     time: 'Time',
     size: 'Size',
-    welcomeTitle: 'Welcome to RC Rest Client',
+    welcomeTitle: 'Welcome to RestClient',
     welcomeMsg:
       'Select a request from the sidebar or create a new one to get started. You can organize requests into folders by dragging and dropping.',
     untitled: 'Untitled',
@@ -53,10 +53,16 @@ export const translations = {
     enterUrl: 'Please enter a URL',
     preview: 'Preview',
     download: 'Download',
-    responseHeaders: 'Headers'
+    responseHeaders: 'Headers',
+    exportSuccess: 'Export successful!',
+    exportError: 'Export failed',
+    downloadSuccess: 'File saved successfully to',
+    downloadError: 'Failed to save file:',
+    downloadStarted: 'Download started',
+    openInFolder: 'Open in folder'
   },
   zh: {
-    appName: 'REST 客户端',
+    appName: 'RestClient',
     dashboard: '仪表盘',
     newRequest: '新建请求',
     createRequest: '创建请求',
@@ -97,7 +103,7 @@ export const translations = {
     sendPrompt: '发送请求以在此处查看响应。',
     time: '时间',
     size: '大小',
-    welcomeTitle: '欢迎使用 RC Rest Client',
+    welcomeTitle: '欢迎使用 RestClient',
     welcomeMsg: '从侧边栏选择一个请求或创建一个新请求以开始。您可以通过拖放将请求整理到文件夹中。',
     untitled: '无标题',
     untitledRequest: '无标题请求',
@@ -106,7 +112,13 @@ export const translations = {
     enterUrl: '请输入 URL',
     preview: '预览',
     download: '下载',
-    responseHeaders: '响应头'
+    responseHeaders: '响应头',
+    exportSuccess: '导出成功！',
+    exportError: '导出失败',
+    downloadSuccess: '文件保存成功，位置：',
+    downloadError: '保存文件失败：',
+    downloadStarted: '下载已开始',
+    openInFolder: '在文件夹中打开'
   }
 };
 
