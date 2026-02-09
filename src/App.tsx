@@ -53,7 +53,8 @@ const App: React.FC = () => {
 
   const onSelectRequest = (id: string) => {
     handleSelectRequest(id);
-    setResponse(null);
+    const req = state.requests.find((r) => r.id === id);
+    setResponse(req?.lastResponse || null);
   };
 
   const onSendRequest = async (req: RequestItem) => {
@@ -62,6 +63,18 @@ const App: React.FC = () => {
     try {
       const res = await requestService.sendRequest(req, t);
       setResponse(res);
+
+      // Save the response to the request item for caching
+      // Strip Blobs as they cannot be serialized to localStorage comfortably
+      const cacheResponse = { ...res };
+      if (res.data instanceof Blob) {
+        cacheResponse.data = null;
+      }
+
+      handleUpdateRequest({
+        ...req,
+        lastResponse: cacheResponse
+      });
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       toast.error(errorMessage || 'Request failed');

@@ -17,6 +17,7 @@ export interface RequestItem {
   bodyType: 'none' | 'json' | 'text';
   bodyContent: string;
   createdAt: number;
+  lastResponse?: ApiResponse;
 }
 
 export interface Folder {
