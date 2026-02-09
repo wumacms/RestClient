@@ -156,10 +156,30 @@ export const ResponsePanel: React.FC<ResponsePanelProps> = ({ response, loading,
         else if (isHtml) ext = 'html';
         else if (contentType.includes('markdown')) ext = 'md';
         else if (contentType.includes('png')) ext = 'png';
-        else if (contentType.includes('jpeg')) ext = 'jpg';
+        else if (contentType.includes('jpeg') || contentType.includes('jpg')) ext = 'jpg';
+        else if (contentType.includes('gif')) ext = 'gif';
+        else if (contentType.includes('webp')) ext = 'webp';
+        else if (contentType.includes('svg')) ext = 'svg';
         else if (contentType.includes('pdf')) ext = 'pdf';
+        else if (contentType.includes('mp4')) ext = 'mp4';
+        else if (contentType.includes('webm')) ext = 'webm';
+        else if (contentType.includes('mpeg') || contentType.includes('mp3')) ext = 'mp3';
+        else if (contentType.includes('wav')) ext = 'wav';
+        else if (contentType.includes('zip')) ext = 'zip';
+        else if (contentType.includes('xml')) ext = 'xml';
 
-        a.download = `response-${Date.now()}.${ext}`;
+        let filename = `response-${Date.now()}.${ext}`;
+
+        // Check Content-Disposition
+        const disposition = response?.headers['content-disposition'];
+        if (disposition) {
+            const match = disposition.match(/filename="?([^"]+)"?/);
+            if (match && match[1]) {
+                filename = match[1];
+            }
+        }
+
+        a.download = filename;
         a.click();
 
         if (cleanup) {
