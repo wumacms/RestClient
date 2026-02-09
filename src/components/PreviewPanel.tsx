@@ -3,7 +3,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { ApiResponse } from '../types';
 import { Download, FileText, Music, Video, Image as ImageIcon } from 'lucide-react';
-import { translations } from '../utils/translations';
+import { Translations } from '../utils/translations';
 
 interface PreviewPanelProps {
   response: ApiResponse;
@@ -17,8 +17,8 @@ interface PreviewPanelProps {
     isMarkdown: boolean;
     isJson: boolean;
   };
-  renderJson: (data: any) => React.ReactNode;
-  t: typeof translations.en;
+  renderJson: (data: unknown) => React.ReactNode;
+  t: Translations;
 }
 
 export const PreviewPanel: React.FC<PreviewPanelProps> = ({

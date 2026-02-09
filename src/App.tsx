@@ -6,6 +6,7 @@ import { ApiResponse, RequestItem } from './types';
 import { Menu, Sun, Moon } from 'lucide-react';
 import { useAppState } from './hooks/useAppState';
 import { requestService } from './services/requestService';
+import { Toaster, toast } from 'sonner';
 
 const App: React.FC = () => {
   const {
@@ -44,8 +45,9 @@ const App: React.FC = () => {
     try {
       const res = await requestService.sendRequest(req, t);
       setResponse(res);
-    } catch (error: any) {
-      alert(error.message);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      toast.error(errorMessage || 'Request failed');
     } finally {
       setLoading(false);
     }
@@ -168,6 +170,7 @@ const App: React.FC = () => {
           </div>
         </main>
       </div>
+      <Toaster theme={theme} richColors position="top-right" closeButton />
     </div>
   );
 };

@@ -1,56 +1,59 @@
 # 项目现状分析报告 - RestClient
 
+**最后更新时间**: 2026-02-09
+
 ## 1. 概览
-RestClient 是一个基于 React 19、TypeScript 和 Vite 6 构建的现代化 API 调试工具。虽然项目基础架构清晰且功能完整，但在工程化规范、代码解耦、质量保障等方面存在提升空间。
+项目已完成初步的代码重构与模块化拆分。目录结构已规范化到 `src` 下，核心逻辑已从 `App.tsx` 抽离至 `hooks` 和 `services`。目前主要欠缺在于**类型严格性**、**自动化测试**以及**生产环境的代理方案**。
 
 ---
 
-## 2. 发现的问题与改进建议
+## 2. 当前存在的问题
 
-### 2.1 工程化与代码规范
-*   **目录结构不标准**：
-    *   **问题**：核心源文件（`App.tsx`, `index.tsx`, `types.ts`）直接散落在根目录。
-    *   **改进**：应统一移动到 `src` 目录下，遵循标准的 React 项目组织结构。
-*   **静态检查与格式化工具缺失**：
-    *   **问题**：项目中没有配置 ESLint 和 Prettier，依赖中也缺乏相关包。
-    *   **改进**：引入 ESLint (建议使用针对 React 19 的新版配置) 和 Prettier，并在 `package.json` 中增加 `lint` 和 `format` 脚本。
-*   **脚本缺失**：
-    *   **问题**：`package.json` 仅有基本的 `dev`, `build`, `preview` 脚本。
-    *   **改进**：补充 `type-check`, `lint`, `format`, `test` 等脚本。
+### 2.1 代码质量与类型安全 (TypeScript & Lint)
+虽然配置了 TypeScript 和 ESLint，但代码中仍存在明显的类型逃逸和规范问题：
+*   **过度使用 `any` 类型**：
+    *   `src/App.tsx`: Catch 块中的 error 使用了 `any`。
+    *   `src/services/requestService.ts`: `translations` 参数和异常处理使用了 `any`。
+    *   `src/components/ResponsePanel.tsx` 和 `PreviewPanel.tsx`: 存在未定义的类型。
+    *   `src/types.ts`: 存在 `any` 定义。
+*   **React Hooks 依赖缺失**：
+    *   `src/components/ResponsePanel.tsx`: `useEffect` 缺少依赖项 `blobUrl`，可能导致状态更新Bug。
 
-### 2.2 代码架构与质量
-*   **组件逻辑高度耦合**：
-    *   **问题**：`App.tsx` (约 440 行) 承担了过多的职责，包括状态管理、业务逻辑（文件夹/请求的 CRUD）、网络请求、主题语言切换等。
-    *   **改进**：
-        *   使用 **Custom Hooks** (如 `useRequests`, `useTheme`, `useI18n`) 将业务逻辑从 UI 组件中剥离。
-        *   引入 **Service 层** 处理网络请求，不要在组件内部直接通过 `fetch` 实现复杂的代理逻辑。
-*   **状态管理复杂性**：
-    *   **问题**：使用原始的 `useState` 处理深层嵌套的对象（文件夹和请求列表），逻辑代码繁琐且易出错。
-    *   **改进**：考虑使用 `useReducer` 管理复杂的状态集合，或者引入轻量级状态库如 `Zustand`。
-*   **组件粒度过大**：
-    *   **问题**：`Sidebar`, `RequestEditor`, `ResponsePanel` 等组件体积较大 (10KB - 20KB)，内部缺乏原子化拆分。
-    *   **改进**：将大型组件细分为更小的原子组件（如 `MethodBadge`, `HeaderRow`, `FolderItem` 等），提高可维护性和代码复用。
+### 2.2 测试体系缺失
+*   **问题**：项目中尚未安装任何测试框架（如 Vitest 或 Jest）。
+*   **风险**：核心业务逻辑（如 `requestService` 的请求发送、Header处理）和 Hooks（`useAppState`）完全缺乏单元测试保护，重构时极易引入回归 Bug。
 
-### 2.3 质量保障与安全
-*   **缺乏自动化测试**：
-    *   **问题**：项目中完全没有单元测试或集成测试。
-    *   **改进**：引入 `Vitest` 和 `React Testing Library`，针对工具类函数（`helpers.ts`）和核心逻辑（Request CRUD）编写测试。
-*   **代理逻辑耦合与安全**：
-    *   **问题**：CORS 代理服务器直接实现在 `vite.config.ts` 中。这虽然解决了开发环境问题，但代理没有对 `targetUrl` 进行验证。
-    *   **改进**：对代理请求进行基本的安全校验，或者将代理逻辑拆分为独立的 Node.js 中间件，并在文档中说明生产环境的代理部署方案。
-*   **错误边界逻辑不足**：
-    *   **问题**：虽然有 try-catch，但缺乏全局 React Error Boundaries。
-    *   **改进**：在顶层增加 `ErrorBoundary` 组件，防止某个子组件崩溃导致整个应用不可用。
+### 2.3 架构与部署限制
+*   **代理服务局限性**：
+    *   目前的跨域代理（CORS Proxy）是通过 `vite.config.ts` 中的 `server.proxy` 中间件实现的。
+    *   **严重问题**：这种方式仅在本地开发环境（`npm run dev`）有效。构建为静态文件（`npm run build`）后，如果没有配套的后端服务，应用将无法处理跨域请求，导致功能不可用。
+*   **缺乏全局错误边界**：
+    *   `App.tsx` 中未包含 React Error Boundary。如果某个子组件渲染崩溃，会导致整个页面白屏。
 
-### 2.4 文档与持续集成
-*   **缺乏 CI/CD**：
-    *   **问题**：没有配置 CI 流程来自动化运行 lint 和 type-check。
-    *   **改进**：增加 GitHub Actions 配置，在提交代码或发起 PR 时自动进行静态检查和构建验证。
+### 2.4 UI 与交互体验
+*   **错误提示简陋**：
+    *   `App.tsx` (Line 48) 使用原生的 `alert(error.message)` 进行错误提示，用户体验较差。应使用 Toast 组件或自定义模态框。
 
 ---
 
-## 3. 优先级建议
-1.  **高优先级**：重构目录结构 (移动至 `src`)，引入 ESLint/Prettier。
-2.  **高优先级**：将 `App.tsx` 中的逻辑抽离至 Custom Hooks，降低主组件复杂度。
-3.  **中优先级**：引入自动化测试框架并覆盖核心逻辑。
-4.  **低优先级**：细化 UI 组件拆分，优化代理安全逻辑。
+## 3. 改进建议与计划
+
+### 3.1 短期优化 (P0 - High Priority) (已完成)
+1.  **修复 Lint 警告** (已完成)：
+    *   [x] 完善 TS 类型定义，移除核心逻辑中的 `any`。
+    *   [x] 修复 Hooks 依赖数组问题。
+2.  **引入测试框架** (已完成)：
+    *   [x] 安装 `vitest`, `@testing-library/react`, `jsdom`。
+    *   [x] 为 `requestService` 和 `utils` 添加基础单元测试。
+
+### 3.2 中期迭代 (P1 - Medium Priority)
+1.  **优化部署架构**：
+    *   方案 A（纯前端）：明确项目仅作为 Electron/Tauri 桌面应用运行（自带 Node 环境，无需代理）。
+    *   方案 B（Web 部署）：开发一个轻量级的 Node.js/Edge Function 中间件作为生产环境代理。
+2.  **增强 UI 反馈** (已完成)：
+    *   [x] 引入 `sonner` 替换 `alert`。
+    *   [x] 添加全局 `ErrorBoundary` 组件。
+
+### 3.3 长期规划 (P2 - Low Priority)
+1.  **组件原子化**：虽然 `App.tsx` 已瘦身，但 Sidebar 和 Editor 仍有进一步拆分空间。
+2.  **CI/CD 集成**：配置 GitHub Actions 自动运行 Lint 和 Test。

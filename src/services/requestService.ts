@@ -1,8 +1,9 @@
 import { ApiResponse, RequestItem } from '../types';
 import { formatBytes } from '../utils/helpers';
+import { Translations } from '../utils/translations';
 
 export const requestService = {
-  sendRequest: async (req: RequestItem, translations: any): Promise<ApiResponse> => {
+  sendRequest: async (req: RequestItem, translations: Translations): Promise<ApiResponse> => {
     if (!req.url) {
       throw new Error(translations.enterUrl);
     }
@@ -76,12 +77,13 @@ export const requestService = {
         isError: !res.ok,
         url: req.url
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
       return {
         status: 0,
         statusText: translations.networkError,
         headers: {},
-        data: error.message || translations.corsError,
+        data: errorMessage || translations.corsError,
         contentType: 'text/plain',
         size: '0 B',
         time: Math.round(performance.now() - startTime),

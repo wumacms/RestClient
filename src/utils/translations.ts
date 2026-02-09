@@ -109,3 +109,5 @@ export const translations = {
     responseHeaders: '响应头'
   }
 };
+
+export type Translations = typeof translations.en;

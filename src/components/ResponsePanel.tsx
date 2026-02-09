@@ -2,31 +2,35 @@ import React, { useState, useEffect } from 'react';
 import { ApiResponse } from '../types';
 import { cn } from '../utils/helpers';
 import { Copy, Check, Download, Eye, FileText, FileCode } from 'lucide-react';
-import { translations } from '../utils/translations';
+import { Translations } from '../utils/translations';
 import { useResponseDetection } from '../hooks/useResponseDetection';
 import { PreviewPanel } from './PreviewPanel';
 
 interface ResponsePanelProps {
   response: ApiResponse | null;
   loading: boolean;
-  t: typeof translations.en;
+  t: Translations;
 }
 
 export const ResponsePanel: React.FC<ResponsePanelProps> = ({ response, loading, t }) => {
   const [activeTab, setActiveTab] = React.useState<'preview' | 'json' | 'headers' | 'raw'>('json');
   const [copied, setCopied] = React.useState(false);
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
+  const activeUrlRef = React.useRef<string | null>(null);
 
   const { contentType, isImage, isAudio, isVideo, isBlob, isHtml, isMarkdown, isJson } =
     useResponseDetection(response);
 
   useEffect(() => {
-    if (blobUrl) {
-      URL.revokeObjectURL(blobUrl);
+    // Revoke previous URL if exists (handled by cleanup, but double check on start if needed or simplify logic)
+    if (activeUrlRef.current) {
+      URL.revokeObjectURL(activeUrlRef.current);
+      activeUrlRef.current = null;
     }
 
     if (response?.data instanceof Blob) {
       const url = URL.createObjectURL(response.data);
+      activeUrlRef.current = url;
       setBlobUrl(url);
       setActiveTab('preview');
     } else {
@@ -43,7 +47,10 @@ export const ResponsePanel: React.FC<ResponsePanelProps> = ({ response, loading,
     }
 
     return () => {
-      if (blobUrl) URL.revokeObjectURL(blobUrl);
+      if (activeUrlRef.current) {
+        URL.revokeObjectURL(activeUrlRef.current);
+        activeUrlRef.current = null;
+      }
     };
   }, [response, isHtml, isMarkdown, isJson]);
 
@@ -97,7 +104,9 @@ export const ResponsePanel: React.FC<ResponsePanelProps> = ({ response, loading,
 
     if (!url) {
       const dataStr =
-        typeof response.data === 'object' ? JSON.stringify(response.data, null, 2) : response.data;
+        typeof response.data === 'object'
+          ? JSON.stringify(response.data, null, 2)
+          : String(response.data);
       const blob = new Blob([dataStr], { type: contentType || 'text/plain' });
       url = URL.createObjectURL(blob);
       cleanup = true;
@@ -130,7 +139,7 @@ export const ResponsePanel: React.FC<ResponsePanelProps> = ({ response, loading,
         if (urlExt && /^[a-z0-9]+$/i.test(urlExt) && urlExt.length < 10) {
           ext = urlExt;
         }
-      } catch (e) {}
+      } catch (e) { }
     }
 
     let filename = `response-${Date.now()}.${ext}`;
@@ -164,7 +173,7 @@ export const ResponsePanel: React.FC<ResponsePanelProps> = ({ response, loading,
     }
   };
 
-  const renderJson = (data: any) => {
+  const renderJson = (data: unknown) => {
     try {
       const dataToRender = typeof data === 'string' ? JSON.parse(data) : data;
       const json = JSON.stringify(dataToRender, null, 2);

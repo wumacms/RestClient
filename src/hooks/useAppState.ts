@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import { AppState, Folder, RequestItem } from '../types';
 import { generateId } from '../utils/helpers';
 import { translations, Language } from '../utils/translations';
@@ -199,12 +200,12 @@ export const useAppState = () => {
         const parsed = JSON.parse(evt.target?.result as string);
         if (Array.isArray(parsed.folders) && Array.isArray(parsed.requests)) {
           setState(parsed);
-          alert(t.importSuccess);
+          toast.success(t.importSuccess);
         } else {
-          alert(t.invalidFile);
+          toast.error(t.invalidFile);
         }
       } catch (err) {
-        alert(t.failedParse);
+        toast.error(t.failedParse);
       }
     };
     reader.readAsText(file);

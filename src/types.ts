@@ -30,7 +30,7 @@ export interface ApiResponse {
   status: number;
   statusText: string;
   headers: Record<string, string>;
-  data: any; // Can be object, string, or Blob
+  data: unknown; // Can be object, string, or Blob
   contentType: string;
   size: string;
   time: number; // in ms
